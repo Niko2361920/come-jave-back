@@ -12,4 +12,28 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  build: {
+    target: "es2022",
+    sourcemap: false,
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return;
+          }
+
+          if (id.includes("firebase")) return "firebase";
+          if (id.includes("@tanstack/react-router")) return "router";
+          if (id.includes("@tanstack/react-query")) return "query";
+          if (id.includes("@radix-ui") || id.includes("lucide-react") || id.includes("sonner")) return "ui";
+          if (id.includes("recharts") || id.includes("embla-carousel") || id.includes("@dnd-kit")) return "visuals";
+          if (id.includes("date-fns") || id.includes("react-day-picker")) return "dates";
+          if (id.includes("react") || id.includes("react-dom")) return "react";
+          return "vendor";
+        },
+      },
+    },
+  },
 });

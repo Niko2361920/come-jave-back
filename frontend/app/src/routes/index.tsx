@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -21,7 +20,7 @@ import {
   isJaverianaEmail,
 } from "@/lib/auth.utils";
 import { formatCOP, restaurants, type Restaurant } from "@/lib/comejave-data";
-import { auth, firebaseEnabled } from "@/lib/firebase";
+import { firebaseEnabled, getFirebaseAuth } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -104,21 +103,33 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (!auth) {
-      return;
-    }
+    let isMounted = true;
+    let unsubscribe: (() => void) | undefined;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
+    const loadAuthState = async () => {
+      const firebaseAuth = await getFirebaseAuth();
+      if (!firebaseAuth || !isMounted) {
         return;
       }
 
-      const safeName = getDisplayName(user.displayName || user.email || "Javeriano");
-      const safeEmail = user.email || "";
-      persistCurrentUser(safeName, safeEmail);
-    });
+      const { onAuthStateChanged } = await import("firebase/auth");
+      unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+        if (!user) {
+          return;
+        }
 
-    return unsubscribe;
+        const safeName = getDisplayName(user.displayName || user.email || "Javeriano");
+        const safeEmail = user.email || "";
+        persistCurrentUser(safeName, safeEmail);
+      });
+    };
+
+    loadAuthState();
+
+    return () => {
+      isMounted = false;
+      unsubscribe?.();
+    };
   }, []);
 
   const persistCurrentUser = (name: string, email?: string) => {
@@ -141,7 +152,8 @@ function Index() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!auth || !firebaseEnabled) {
+    const firebaseAuth = await getFirebaseAuth();
+    if (!firebaseAuth || !firebaseEnabled) {
       setAuthError("La autenticación con Google no está configurada todavía.");
       return;
     }
@@ -150,12 +162,13 @@ function Index() {
     setAuthError("");
 
     try {
+      const { signInWithPopup, signOut } = await import("firebase/auth");
       const provider = buildInstitutionalGoogleProvider();
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(firebaseAuth, provider);
       const email = result.user.email || "";
 
       if (!isJaverianaEmail(email)) {
-        await signOut(auth);
+        await signOut(firebaseAuth);
         setAuthError("Solo se permiten correos con dominio @javerianacali.edu.co");
         return;
       }
