@@ -9,6 +9,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { CreateOrderDto } from '../dto/create-order.dto';
 import { FilterOrderDto } from '../dto/filter-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { OrdersService } from '../services/orders.service';
@@ -17,6 +18,10 @@ import { OrdersService } from '../services/orders.service';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @Post()
+  create(@Body() dto: CreateOrderDto) {
+    return this.ordersService.create(dto);
+  }
 
   // Rama 4: GET /orders?status=PENDING&userId=1234567890
   @Get()

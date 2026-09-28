@@ -118,7 +118,11 @@ export class OrdersService {
   async findOne(id: string): Promise<Order> {
     const order = await this.ordersRepository.findOne({
       where: { id },
-      relations: ['items', 'user'],
+      relations: {
+        items: true,
+        user: true,
+      },
+
     });
     if (!order) {
       throw new NotFoundException(`La orden con id ${id} no existe`);
@@ -129,7 +133,11 @@ export class OrdersService {
   findByUser(userId: string): Promise<Order[]> {
     return this.ordersRepository.find({
       where: { userId },
-      relations: ['items', 'user'],
+      relations: {
+        items: true,
+        user: true,
+      },
+
       order: { createdAt: 'DESC' },
     });
   }
@@ -161,7 +169,7 @@ export class OrdersService {
     try {
       const order = await queryRunner.manager.findOne(Order, {
         where: { id },
-        relations: ['items'],
+        relations: {items:true},
       });
       if (!order) {
         throw new NotFoundException(`La orden con id ${id} no existe`);

@@ -22,32 +22,32 @@ import { UsersModule } from './users/users.module';
         const logging =
           configService.get<string>('DB_LOGGING', 'false') === 'true';
 
-        if (databaseType === 'postgres') {
-          return {
-            type: 'postgres',
-            host: configService.getOrThrow<string>('DB_HOST'),
-            port: Number(configService.get<string>('DB_PORT', '5432')),
-            username: configService.getOrThrow<string>('DB_USERNAME'),
-            password: configService.getOrThrow<string>('DB_PASSWORD'),
-            database: configService.getOrThrow<string>('DB_DATABASE'),
-            autoLoadEntities: true,
-            synchronize,
-            logging,
-          } as TypeOrmModuleOptions;
-        }
+if (databaseType === 'postgres') {
+  return {
+    type: 'postgres',
+    host: configService.getOrThrow<string>('DB_HOST'),
+    port: Number(configService.get<string>('DB_PORT', '5432')),
+    username: configService.getOrThrow<string>('DB_USERNAME'),
+    password: configService.getOrThrow<string>('DB_PASSWORD'),
+    database: configService.getOrThrow<string>('DB_DATABASE'),
+    autoLoadEntities: true,
+    synchronize,
+    logging,
+  } as unknown as TypeOrmModuleOptions;
+}
 
-        if (databaseType === 'sqlite') {
-          return {
-            type: 'sqlite',
-            database: configService.get<string>(
-              'DB_DATABASE',
-              'data/app.sqlite',
-            ),
-            autoLoadEntities: true,
-            synchronize,
-            logging,
-          } as TypeOrmModuleOptions;
-        }
+if (databaseType === 'sqlite' || databaseType === 'better-sqlite3') {
+  return {
+    type: 'better-sqlite3',
+    database: configService.get<string>(
+      'DB_DATABASE',
+      'data/app.sqlite',
+    ),
+    autoLoadEntities: true,
+    synchronize,
+    logging,
+  } as unknown as TypeOrmModuleOptions;
+}
 
         throw new Error(`DB_TYPE no soportado: ${databaseType}`);
       },

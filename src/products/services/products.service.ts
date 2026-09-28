@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CreateProductDto } from '../dto/create-product.dto';
 import { FilterProductDto } from '../dto/filter-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Product } from '../entities/product.entity';
@@ -11,6 +12,11 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly productsRepository: Repository<Product>,
   ) {}
+
+  async create(createProductDto: CreateProductDto): Promise<Product> {
+    const product = this.productsRepository.create(createProductDto);
+    return this.productsRepository.save(product);
+  }
 
   // Rama 4: filtros simples con QueryBuilder (didáctico)
   // Ej: GET /products?name=whey&minPrice=50&maxPrice=200
