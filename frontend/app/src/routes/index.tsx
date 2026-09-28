@@ -79,6 +79,7 @@ function Index() {
   const [history, setHistory] = useState<Order[]>([]);
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState("Javeriano");
+  const [userEmail, setUserEmail] = useState("");
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -93,8 +94,9 @@ function Index() {
 
       const userRaw = localStorage.getItem("comejave.user");
       if (userRaw) {
-        const parsed = JSON.parse(userRaw) as { name?: string };
+        const parsed = JSON.parse(userRaw) as { name?: string; email?: string };
         if (parsed.name) setCurrentUser(parsed.name);
+        if (parsed.email) setUserEmail(parsed.email);
       }
     } catch {
       /* ignore */
@@ -112,17 +114,27 @@ function Index() {
       }
 
       const safeName = getDisplayName(user.displayName || user.email || "Javeriano");
-      persistCurrentUser(safeName);
+      const safeEmail = user.email || "";
+      persistCurrentUser(safeName, safeEmail);
     });
 
     return unsubscribe;
   }, []);
 
-  const persistCurrentUser = (name: string) => {
+  const persistCurrentUser = (name: string, email?: string) => {
     const safeName = getDisplayName(name);
+    const normalizedEmail = (email || "").trim().toLowerCase();
+
     setCurrentUser(safeName);
+    setUserEmail(normalizedEmail);
     try {
-      localStorage.setItem("comejave.user", JSON.stringify({ name: safeName }));
+      localStorage.setItem(
+        "comejave.user",
+        JSON.stringify({
+          name: safeName,
+          email: normalizedEmail,
+        }),
+      );
     } catch {
       /* ignore */
     }
@@ -149,7 +161,7 @@ function Index() {
       }
 
       const safeName = getDisplayName(result.user.displayName || email.split("@")[0]);
-      persistCurrentUser(safeName);
+      persistCurrentUser(safeName, email);
       setScreen("home");
     } catch (error) {
       setAuthError("No pudimos iniciar sesión con Google. Inténtalo nuevamente.");
@@ -162,14 +174,22 @@ function Index() {
   const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const safeName = loginForm.username.trim() || "Javeriano";
-    persistCurrentUser(safeName);
+    persistCurrentUser(safeName, loginForm.username.trim() ? `${loginForm.username.trim()}@javerianacali.edu.co` : "");
     setScreen("home");
   };
 
   const handleSignupSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const safeName = signupForm.name.trim() || signupForm.email.trim().split("@")[0] || "Javeriano";
-    persistCurrentUser(safeName);
+    const email = signupForm.email.trim().toLowerCase();
+
+    if (!isJaverianaEmail(email)) {
+      setAuthError("El correo debe terminar en @javerianacali.edu.co");
+      return;
+    }
+
+    const safeName = signupForm.name.trim() || email.split("@")[0] || "Javeriano";
+    persistCurrentUser(safeName, email);
+    setAuthError("");
     setScreen("home");
   };
 
@@ -375,6 +395,23 @@ function Index() {
                   {history.length}
                 </span>
               </button>
+
+              <div className="mt-7 rounded-3xl bg-primary-soft p-4 ring-1 ring-primary/10">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Perfil del usuario
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+                    {currentUser.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-bold text-primary">{currentUser}</p>
+                    <p className="truncate text-[12px] text-muted-foreground">
+                      {userEmail || "Sin correo principal"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex flex-col gap-4 px-7 py-8">
               {restaurants.map((r) => (
