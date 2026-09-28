@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Check,
   ChevronRight,
   Clock,
+  Eye,
+  EyeOff,
   History,
   Plus,
   ShoppingCart,
@@ -12,7 +20,9 @@ import {
 } from "lucide-react";
 import { Btn, Field, Screen } from "@/components/comejave/ui";
 import { Stars } from "@/components/comejave/Stars";
+import { getDisplayName, isJaverianaEmail } from "@/lib/auth.utils";
 import { formatCOP, restaurants, type Restaurant } from "@/lib/comejave-data";
+import { auth, firebaseEnabled } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -69,15 +79,101 @@ function Index() {
   const [method, setMethod] = useState<Order["method"]>("Efectivo");
   const [history, setHistory] = useState<Order[]>([]);
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState("Javeriano");
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setHistory(JSON.parse(raw) as Order[]);
+
+      const userRaw = localStorage.getItem("comejave.user");
+      if (userRaw) {
+        const parsed = JSON.parse(userRaw) as { name?: string };
+        if (parsed.name) setCurrentUser(parsed.name);
+      }
     } catch {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    if (!auth) {
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        return;
+      }
+
+      const safeName = getDisplayName(user.displayName || user.email || "Javeriano");
+      persistCurrentUser(safeName);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const persistCurrentUser = (name: string) => {
+    const safeName = getDisplayName(name);
+    setCurrentUser(safeName);
+    try {
+      localStorage.setItem("comejave.user", JSON.stringify({ name: safeName }));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!auth || !firebaseEnabled) {
+      setAuthError("La autenticación con Google no está configurada todavía.");
+      return;
+    }
+
+    setIsAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ hd: "javerianacali.edu.co" });
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email || "";
+
+      if (!isJaverianaEmail(email)) {
+        await signOut(auth);
+        setAuthError("Solo se permiten correos con dominio @javerianacali.edu.co");
+        return;
+      }
+
+      const safeName = getDisplayName(result.user.displayName || email.split("@")[0]);
+      persistCurrentUser(safeName);
+      setScreen("home");
+    } catch (error) {
+      setAuthError("No pudimos iniciar sesión con Google. Inténtalo nuevamente.");
+      console.error(error);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const safeName = loginForm.username.trim() || "Javeriano";
+    persistCurrentUser(safeName);
+    setScreen("home");
+  };
+
+  const handleSignupSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const safeName = signupForm.name.trim() || signupForm.email.trim().split("@")[0] || "Javeriano";
+    persistCurrentUser(safeName);
+    setScreen("home");
+  };
 
   const persist = (next: Order[]) => {
     setHistory(next);
@@ -140,19 +236,53 @@ function Index() {
         {screen === "login" && (
           <Screen className="flex flex-1 flex-col justify-center gap-9 px-7 py-14">
             <Brand />
-            <form
-              className="flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setScreen("home");
-              }}
-            >
-              <Field label="Usuario" placeholder="tu.usuario" autoComplete="username" />
-              <Field label="Contraseña" type="password" placeholder="••••••••" />
+            <form className="flex flex-col gap-4" onSubmit={handleLoginSubmit}>
+              <Field
+                label="Usuario"
+                placeholder="tu.usuario"
+                autoComplete="username"
+                value={loginForm.username}
+                onChange={(event) =>
+                  setLoginForm((previous) => ({ ...previous, username: event.target.value }))
+                }
+              />
+              <Field
+                label="Contraseña"
+                type={showLoginPassword ? "text" : "password"}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                value={loginForm.password}
+                onChange={(event) =>
+                  setLoginForm((previous) => ({ ...previous, password: event.target.value }))
+                }
+                endAdornment={
+                  <button
+                    type="button"
+                    aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowLoginPassword((previous) => !previous)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
+                  >
+                    {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+              />
               <Btn full type="submit" className="mt-2">
                 Ingresar
               </Btn>
             </form>
+            {firebaseEnabled && (
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isAuthLoading}
+                className="mx-auto w-full rounded-full border border-primary/15 bg-white px-5 py-3 text-[15px] font-bold text-primary transition-colors hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isAuthLoading ? "Conectando..." : "Continuar con Google"}
+              </button>
+            )}
+            {authError && (
+              <p className="text-center text-sm font-medium text-red-600">{authError}</p>
+            )}
             <button
               onClick={() => setScreen("signup")}
               className="mx-auto rounded-full bg-accent-soft px-5 py-2.5 text-[15px] font-bold text-accent-foreground transition-colors hover:bg-accent active:bg-accent"
@@ -165,20 +295,61 @@ function Index() {
         {screen === "signup" && (
           <Screen className="flex flex-1 flex-col gap-8 px-7 py-10">
             <Header title="Crear cuenta" onBack={() => setScreen("login")} />
-            <form
-              className="flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setScreen("home");
-              }}
-            >
-              <Field label="Usuario" placeholder="tu.usuario" />
-              <Field label="Correo" type="email" placeholder="nombre@javerianacali.edu.co" />
-              <Field label="Contraseña" type="password" placeholder="••••••••" />
+            <form className="flex flex-col gap-4" onSubmit={handleSignupSubmit}>
+              <Field
+                label="Nombre"
+                placeholder="Tu nombre completo"
+                value={signupForm.name}
+                onChange={(event) =>
+                  setSignupForm((previous) => ({ ...previous, name: event.target.value }))
+                }
+              />
+              <Field
+                label="Correo"
+                type="email"
+                placeholder="nombre@javerianacali.edu.co"
+                value={signupForm.email}
+                onChange={(event) =>
+                  setSignupForm((previous) => ({ ...previous, email: event.target.value }))
+                }
+              />
+              <Field
+                label="Contraseña"
+                type={showSignupPassword ? "text" : "password"}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                value={signupForm.password}
+                onChange={(event) =>
+                  setSignupForm((previous) => ({ ...previous, password: event.target.value }))
+                }
+                endAdornment={
+                  <button
+                    type="button"
+                    aria-label={showSignupPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowSignupPassword((previous) => !previous)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
+                  >
+                    {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+              />
               <Btn full type="submit" variant="accent" className="mt-2">
                 Crear
               </Btn>
             </form>
+            {firebaseEnabled && (
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isAuthLoading}
+                className="w-full rounded-full border border-primary/15 bg-white px-5 py-3 text-[15px] font-bold text-primary transition-colors hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isAuthLoading ? "Conectando..." : "Registrarme con Google"}
+              </button>
+            )}
+            {authError && (
+              <p className="text-center text-sm font-medium text-red-600">{authError}</p>
+            )}
           </Screen>
         )}
 
@@ -187,7 +358,7 @@ function Index() {
             <div className="rounded-b-[2rem] bg-primary px-7 pb-9 pt-10 text-primary-foreground">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[13px] text-primary-foreground/70">Hola, javeriano 👋</p>
+                  <p className="text-[13px] text-primary-foreground/70">Hola, {currentUser} 👋</p>
                   <h1 className="mt-1 text-3xl font-bold tracking-tight">¿Dónde comemos?</h1>
                 </div>
                 <CartButton
