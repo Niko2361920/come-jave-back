@@ -1,114 +1,148 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Come Jave Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend desarrollado con NestJS para gestionar usuarios, productos y pedidos de una aplicación de comercio o ventas.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tecnologías
 
-## Description
+- Node.js
+- NestJS
+- TypeScript
+- TypeORM
+- SQLite por defecto
+- PostgreSQL compatible
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Características
 
-## Project setup
+- CRUD de usuarios
+- CRUD de productos
+- CRUD de pedidos
+- Filtros para búsquedas de productos y pedidos
+- Validación de variables de entorno
+- Soporte para SQLite y PostgreSQL
 
-```bash
-$ npm install
-```
+## Requisitos
 
-## Compile and run the project
+- Node.js 18 o superior
+- npm
+- Git
+
+## Instalación
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+## Configuración
+
+Crea un archivo `.env` en la raíz del proyecto.
+
+### SQLite (por defecto)
+
+```env
+PORT=3000
+DB_TYPE=sqlite
+DB_SYNCHRONIZE=true
+DB_LOGGING=false
+DB_DATABASE=data/app.sqlite
+```
+
+### PostgreSQL
+
+```env
+PORT=3000
+DB_TYPE=postgres
+DB_SYNCHRONIZE=true
+DB_LOGGING=false
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=tu_password
+DB_DATABASE=come_jave
+```
+
+## Ejecutar la aplicación
+
+### Desarrollo
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Producción
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run build
+npm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Scripts disponibles
 
-## Observability
+```bash
+npm run start
+npm run start:dev
+npm run start:debug
+npm run build
+npm run test
+npm run test:e2e
+npm run lint
+```
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+## Endpoints principales
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+### Usuarios
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+- `POST /users`
+- `GET /users`
+- `GET /users/:id`
+- `PUT /users/:id`
+- `DELETE /users/:id`
 
-## Resources
+### Productos
 
-Check out a few resources that may come in handy when working with NestJS:
+- `POST /products`
+- `GET /products`
+- `GET /products/:id`
+- `PUT /products/:id`
+- `DELETE /products/:id`
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Ejemplo de filtros:
 
-## Support
+```http
+GET /products?name=whey&minPrice=10&maxPrice=200&minStock=1
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Pedidos
 
-## Stay in touch
+- `POST /orders`
+- `GET /orders`
+- `GET /orders/:id`
+- `GET /orders/user/:userId`
+- `PUT /orders/:id`
+- `PUT /orders/:id/cancel`
+- `DELETE /orders/:id`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Estructura del proyecto
 
-## License
+```text
+src/
+  app.module.ts
+  main.ts
+  config/
+  users/
+  products/
+  orders/
+  data/
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Contribución
+
+1. Haz fork del proyecto.
+2. Crea una rama para tu funcionalidad: `git checkout -b feature/nueva-funcionalidad`
+3. Realiza tus cambios.
+4. Haz commit: `git commit -m "Agrega nueva funcionalidad"`
+5. Haz push: `git push origin feature/nueva-funcionalidad`
+6. Abre un Pull Request.
+
+## Licencia
+
+Este proyecto está bajo la licencia UNLICENSED.
