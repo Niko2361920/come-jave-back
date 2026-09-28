@@ -29,18 +29,28 @@ export function Btn({ variant = "primary", full, className, ...props }: BtnProps
 export function Field({
   label,
   className,
+  endAdornment,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  endAdornment?: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="mb-2 block text-[13px] font-medium text-muted-foreground">{label}</span>
-      <input
-        {...props}
-        className={cn(
-          "w-full rounded-xl border border-input bg-background px-4 py-3.5 text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary",
-          className,
+      <div className="relative">
+        <input
+          {...props}
+          className={cn(
+            "w-full rounded-xl border border-input bg-background px-4 py-3.5 text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary",
+            endAdornment && "pr-12",
+            className,
+          )}
+        />
+        {endAdornment && (
+          <div className="absolute inset-y-0 right-3 flex items-center">{endAdornment}</div>
         )}
-      />
+      </div>
     </label>
   );
 }
