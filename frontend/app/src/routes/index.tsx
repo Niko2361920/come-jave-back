@@ -135,8 +135,8 @@ function Index() {
   };
 
   return (
-    <main className="flex min-h-screen justify-center bg-surface sm:px-4 sm:py-10">
-      <div className="flex min-h-screen w-full max-w-[420px] flex-col overflow-y-auto bg-background sm:h-[860px] sm:min-h-0 sm:rounded-[2rem] sm:border sm:border-border sm:shadow-lg">
+    <main className="flex min-h-screen justify-center bg-surface px-3 py-4 sm:px-4 sm:py-10">
+      <div className="flex min-h-screen w-full max-w-[420px] flex-col overflow-y-auto bg-background/95 shadow-[0_18px_60px_rgba(13,45,90,0.12)] ring-1 ring-[#dfe6f3] sm:h-[860px] sm:min-h-0 sm:rounded-[2rem] sm:border sm:border-border">
         {screen === "login" && (
           <Screen className="flex flex-1 flex-col justify-center gap-9 px-7 py-14">
             <Brand />
@@ -507,11 +507,11 @@ function Index() {
 function Brand() {
   return (
     <div className="text-center">
-      <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-4xl">
+      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-[var(--primary)] to-[#123c79] text-4xl text-white shadow-[0_12px_25px_rgba(13,45,90,0.28)]">
         🍽️
-      </span>
-      <h1 className="mt-5 text-3xl font-bold tracking-tight text-primary">
-        Come <span className="rounded-lg bg-accent px-2 text-accent-foreground">Jave</span>
+      </div>
+      <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-primary">
+        Come <span className="rounded-lg bg-accent px-2 py-1 text-accent-foreground">Jave</span>
       </h1>
       <p className="mt-3 text-[15px] text-muted-foreground">Pide sin filas en el campus</p>
     </div>
