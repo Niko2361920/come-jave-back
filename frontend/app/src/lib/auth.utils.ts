@@ -1,3 +1,5 @@
+import { GoogleAuthProvider } from "firebase/auth";
+
 export function isJaverianaEmail(value: string): boolean {
   const normalized = value.trim().toLowerCase();
 
@@ -12,4 +14,14 @@ export function getDisplayName(value?: string | null): string {
   const safeName = (value ?? "").trim();
 
   return safeName || "Javeriano";
+}
+
+export function buildInstitutionalGoogleProvider(): GoogleAuthProvider {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    hd: "javerianacali.edu.co",
+    prompt: "select_account",
+  });
+
+  return provider;
 }

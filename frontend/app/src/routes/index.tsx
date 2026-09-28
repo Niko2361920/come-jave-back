@@ -1,10 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -20,7 +15,11 @@ import {
 } from "lucide-react";
 import { Btn, Field, Screen } from "@/components/comejave/ui";
 import { Stars } from "@/components/comejave/Stars";
-import { getDisplayName, isJaverianaEmail } from "@/lib/auth.utils";
+import {
+  buildInstitutionalGoogleProvider,
+  getDisplayName,
+  isJaverianaEmail,
+} from "@/lib/auth.utils";
 import { formatCOP, restaurants, type Restaurant } from "@/lib/comejave-data";
 import { auth, firebaseEnabled } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
@@ -139,8 +138,7 @@ function Index() {
     setAuthError("");
 
     try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ hd: "javerianacali.edu.co" });
+      const provider = buildInstitutionalGoogleProvider();
       const result = await signInWithPopup(auth, provider);
       const email = result.user.email || "";
 
