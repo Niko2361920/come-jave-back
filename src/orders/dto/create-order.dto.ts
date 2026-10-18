@@ -3,13 +3,18 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
+  Matches,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { PaymentMethod } from '../entities/order.entity';
 
 export class CreateOrderItemDto {
   @IsUUID()
@@ -28,6 +33,20 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   userId?: string;
+
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
+
+  // Obligatorio solo cuando se paga por Nequi.
+  @ValidateIf(
+    (order: CreateOrderDto) => order.paymentMethod === PaymentMethod.NEQUI,
+  )
+  @IsString()
+  @Matches(/^\d{6,20}$/, {
+    message: 'paymentReference debe tener entre 6 y 20 dígitos',
+  })
+  paymentReference?: string;
 
   @IsArray()
   @ArrayMinSize(1)

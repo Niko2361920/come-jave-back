@@ -256,6 +256,42 @@ describe('Come Jave API (e2e)', () => {
       expect(await stockOf(pizzaId)).toBe(0);
     });
 
+    it('guarda el método de pago y exige comprobante en Nequi', async () => {
+      await http
+        .post('/orders')
+        .set(maria)
+        .send({
+          paymentMethod: 'NEQUI',
+          items: [{ productId: bowlId, quantity: 1 }],
+        })
+        .expect(400);
+      const ok = await http
+        .post('/orders')
+        .set(maria)
+        .send({
+          paymentMethod: 'NEQUI',
+          paymentReference: '987654321',
+          items: [{ productId: bowlId, quantity: 1 }],
+        })
+        .expect(201);
+      expect(ok.body).toMatchObject({
+        paymentMethod: 'NEQUI',
+        paymentReference: '987654321',
+      });
+      await http.put(`/orders/${ok.body.id}/cancel`).set(maria).expect(200);
+
+      const cash = await http
+        .post('/orders')
+        .set(maria)
+        .send({ items: [{ productId: bowlId, quantity: 1 }] })
+        .expect(201);
+      expect(cash.body).toMatchObject({
+        paymentMethod: 'CASH',
+        paymentReference: null,
+      });
+      await http.put(`/orders/${cash.body.id}/cancel`).set(maria).expect(200);
+    });
+
     it('un usuario no registrado recibe un mensaje claro', async () => {
       const res = await http
         .post('/orders')

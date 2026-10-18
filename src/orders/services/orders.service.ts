@@ -14,7 +14,7 @@ import { CreateOrderDto } from '../dto/create-order.dto';
 import { FilterOrderDto } from '../dto/filter-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { OrderItem } from '../entities/order-item.entity';
-import { Order, OrderStatus } from '../entities/order.entity';
+import { Order, OrderStatus, PaymentMethod } from '../entities/order.entity';
 
 const MAX_UNITS_PER_PRODUCT = 100;
 const ORDER_RELATIONS = { items: true, user: true } as const;
@@ -99,8 +99,14 @@ export class OrdersService {
           items.push({ productId, quantity, unitPrice });
         }
 
+        const paymentMethod = dto.paymentMethod ?? PaymentMethod.CASH;
         const order = manager.create(Order, {
           userId: user.id,
+          paymentMethod,
+          paymentReference:
+            paymentMethod === PaymentMethod.NEQUI
+              ? (dto.paymentReference ?? null)
+              : null,
           total: totalCents / 100,
           status: OrderStatus.PENDING,
           items: items as OrderItem[],

@@ -18,6 +18,11 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum PaymentMethod {
+  CASH = 'CASH',
+  NEQUI = 'NEQUI',
+}
+
 @Entity('orders')
 @Index(['userId', 'createdAt'])
 export class Order {
@@ -53,6 +58,13 @@ export class Order {
     default: OrderStatus.PENDING,
   })
   status!: OrderStatus;
+
+  @Column({ type: 'varchar', default: PaymentMethod.CASH })
+  paymentMethod!: PaymentMethod;
+
+  // Número del comprobante de Nequi; el admin lo revisa antes de marcar PAID.
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  paymentReference!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

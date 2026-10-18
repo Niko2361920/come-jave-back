@@ -1,14 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class InitialSchema1792301013123 implements MigrationInterface {
-  name = 'InitialSchema1792301013123';
+export class InitialSchema1792301400675 implements MigrationInterface {
+  name = 'InitialSchema1792301400675';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `CREATE TABLE "users" ("id" varchar PRIMARY KEY NOT NULL, "document" varchar(20), "name" varchar(100) NOT NULL, "email" varchar(254) NOT NULL, "age" integer, "phone" varchar(30), "isActive" boolean NOT NULL DEFAULT (1), "createdAt" datetime NOT NULL DEFAULT (datetime('now')), CONSTRAINT "UQ_c1b20b2a1883ed106c3e746c25a" UNIQUE ("document"), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "orders" ("id" varchar PRIMARY KEY NOT NULL, "userId" varchar NOT NULL, "total" decimal(10,2) NOT NULL, "status" varchar NOT NULL DEFAULT ('PENDING'), "createdAt" datetime NOT NULL DEFAULT (datetime('now')))`,
+      `CREATE TABLE "orders" ("id" varchar PRIMARY KEY NOT NULL, "userId" varchar NOT NULL, "total" decimal(10,2) NOT NULL, "status" varchar NOT NULL DEFAULT ('PENDING'), "paymentMethod" varchar NOT NULL DEFAULT ('CASH'), "paymentReference" varchar(40), "createdAt" datetime NOT NULL DEFAULT (datetime('now')))`,
     );
     await queryRunner.query(
       `CREATE INDEX "IDX_775c9f06fc27ae3ff8fb26f2c4" ON "orders" ("status") `,
@@ -25,10 +25,10 @@ export class InitialSchema1792301013123 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX "IDX_775c9f06fc27ae3ff8fb26f2c4"`);
     await queryRunner.query(`DROP INDEX "IDX_30e6836e8539f85bfc47198067"`);
     await queryRunner.query(
-      `CREATE TABLE "temporary_orders" ("id" varchar PRIMARY KEY NOT NULL, "userId" varchar NOT NULL, "total" decimal(10,2) NOT NULL, "status" varchar NOT NULL DEFAULT ('PENDING'), "createdAt" datetime NOT NULL DEFAULT (datetime('now')), CONSTRAINT "FK_151b79a83ba240b0cb31b2302d1" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE NO ACTION)`,
+      `CREATE TABLE "temporary_orders" ("id" varchar PRIMARY KEY NOT NULL, "userId" varchar NOT NULL, "total" decimal(10,2) NOT NULL, "status" varchar NOT NULL DEFAULT ('PENDING'), "paymentMethod" varchar NOT NULL DEFAULT ('CASH'), "paymentReference" varchar(40), "createdAt" datetime NOT NULL DEFAULT (datetime('now')), CONSTRAINT "FK_151b79a83ba240b0cb31b2302d1" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE NO ACTION)`,
     );
     await queryRunner.query(
-      `INSERT INTO "temporary_orders"("id", "userId", "total", "status", "createdAt") SELECT "id", "userId", "total", "status", "createdAt" FROM "orders"`,
+      `INSERT INTO "temporary_orders"("id", "userId", "total", "status", "paymentMethod", "paymentReference", "createdAt") SELECT "id", "userId", "total", "status", "paymentMethod", "paymentReference", "createdAt" FROM "orders"`,
     );
     await queryRunner.query(`DROP TABLE "orders"`);
     await queryRunner.query(
@@ -69,10 +69,10 @@ export class InitialSchema1792301013123 implements MigrationInterface {
       `ALTER TABLE "orders" RENAME TO "temporary_orders"`,
     );
     await queryRunner.query(
-      `CREATE TABLE "orders" ("id" varchar PRIMARY KEY NOT NULL, "userId" varchar NOT NULL, "total" decimal(10,2) NOT NULL, "status" varchar NOT NULL DEFAULT ('PENDING'), "createdAt" datetime NOT NULL DEFAULT (datetime('now')))`,
+      `CREATE TABLE "orders" ("id" varchar PRIMARY KEY NOT NULL, "userId" varchar NOT NULL, "total" decimal(10,2) NOT NULL, "status" varchar NOT NULL DEFAULT ('PENDING'), "paymentMethod" varchar NOT NULL DEFAULT ('CASH'), "paymentReference" varchar(40), "createdAt" datetime NOT NULL DEFAULT (datetime('now')))`,
     );
     await queryRunner.query(
-      `INSERT INTO "orders"("id", "userId", "total", "status", "createdAt") SELECT "id", "userId", "total", "status", "createdAt" FROM "temporary_orders"`,
+      `INSERT INTO "orders"("id", "userId", "total", "status", "paymentMethod", "paymentReference", "createdAt") SELECT "id", "userId", "total", "status", "paymentMethod", "paymentReference", "createdAt" FROM "temporary_orders"`,
     );
     await queryRunner.query(`DROP TABLE "temporary_orders"`);
     await queryRunner.query(
