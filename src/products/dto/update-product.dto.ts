@@ -5,12 +5,19 @@ import {
   IsOptional,
   IsString,
   Length,
+  Matches,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
 
 export class UpdateProductDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  @Matches(/^[a-z0-9][a-z0-9:_-]*$/)
+  sku?: string;
+
   @IsOptional()
   @IsString()
   @Length(2, 120)

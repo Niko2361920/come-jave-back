@@ -1,6 +1,4 @@
-import { Transform } from 'class-transformer';
 import {
-  IsEmail,
   IsInt,
   IsOptional,
   IsString,
@@ -10,6 +8,7 @@ import {
   Min,
 } from 'class-validator';
 
+// El correo no se puede cambiar: es la identidad que llega en el token.
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
@@ -17,10 +16,9 @@ export class UpdateUserDto {
   name?: string;
 
   @IsOptional()
-  @Transform(({ value }: { value: string }) => value?.trim().toLowerCase())
-  @IsEmail()
-  @Length(5, 254)
-  email?: string;
+  @IsString()
+  @Matches(/^\d{5,20}$/)
+  document?: string;
 
   @IsOptional()
   @IsInt()
@@ -30,6 +28,6 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^\+?[0-9]{7,15}$/) // +? permite el prefijo internacional; [0-9]{7,15} exige entre 7 y 15 dígitos.
+  @Matches(/^\+?[0-9]{7,15}$/)
   phone?: string;
 }

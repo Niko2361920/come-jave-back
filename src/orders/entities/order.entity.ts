@@ -2,11 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { numericTransformer } from '../../common/numeric.transformer';
 import { User } from '../../users/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
@@ -17,13 +19,15 @@ export enum OrderStatus {
 }
 
 @Entity('orders')
+@Index(['userId', 'createdAt'])
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  // Relación N:1 — muchas órdenes pertenecen a un usuario
-  // onDelete CASCADE: si se borra el usuario, se borran sus órdenes (didáctico)
-  @ManyToOne(() => User, { onDelete: 'CASCADE', nullable: false })
+  // Relación N:1 — muchas órdenes pertenecen a un usuario.
+  // RESTRICT: un usuario con pedidos no se puede borrar de la base (los usuarios
+  // se desactivan con isActive=false); así no se pierde el historial de ventas.
+  @ManyToOne(() => User, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'userId' })
   user!: User;
 
@@ -35,9 +39,15 @@ export class Order {
   items!: OrderItem[];
 
   // Total snapshot al momento de crear — no se recalcula luego
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   total!: number;
 
+  @Index()
   @Column({
     type: 'varchar',
     default: OrderStatus.PENDING,

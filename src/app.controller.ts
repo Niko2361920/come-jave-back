@@ -1,5 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
+import { Public } from './auth/auth.decorators';
 
+@ApiExcludeController()
+@Public()
 @Controller()
 export class AppController {
   @Get()
@@ -13,6 +17,8 @@ export class AppController {
         users: '/users',
         products: '/products',
         orders: '/orders',
+        health: '/health',
+        docs: '/docs',
       },
     };
   }
