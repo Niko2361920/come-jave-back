@@ -2,6 +2,11 @@
 /dist
 /node_modules
 /build
+*.tsbuildinfo
+
+# Local database (el esquema se crea con migraciones; nunca subir datos)
+/data/*
+!/data/.gitkeep
 
 # Logs
 logs
