@@ -1,321 +1,162 @@
 # Come Jave
 
-Este repositorio contiene la base del proyecto Come Jave: un sistema backend con NestJS y una interfaz móvil tipo app creada en React + Vite. La idea principal es una app de pedidos para estudiantes de la Pontificia Universidad Javeriana Cali, con menú fijo de restaurantes, carrito, historial y flujo de pago.
+App de pedidos para estudiantes de la Pontificia Universidad Javeriana Cali: menú fijo de restaurantes (Ventolini y La Frute), carrito, pago en efectivo o Nequi e historial. El repositorio tiene un backend en NestJS y un frontend móvil en React (TanStack Start + Vite).
 
-## 1. Estructura del repositorio
+## 1. Estructura
 
 ```text
-come-jave-backend/
-├─ README.md
-├─ package.json
-├─ src/
-│  ├─ app.module.ts
-│  ├─ main.ts
-│  ├─ config/
-│  ├─ users/
-│  ├─ products/
-│  ├─ orders/
-│  └─ ...
-├─ data/
-├─ dist/
-├─ test/
-├─ postman/
-├─ frontend/
-│  └─ app/
-│     ├─ package.json
-│     ├─ src/
-│     ├─ public/
-│     └─ vite.config.ts
-└─ node_modules/
+├─ src/                    Backend NestJS
+│  ├─ auth/                Guard de Firebase (token, dominio institucional, admin)
+│  ├─ users/ products/ orders/
+│  ├─ config/              Validación de variables de entorno
+│  ├─ database/            data-source (CLI de TypeORM), seed del menú
+│  ├─ migrations/          sqlite/ y postgres/
+│  ├─ health/              GET /health
+│  └─ app.setup.ts         ValidationPipe, CORS, helmet, Swagger (compartido con los e2e)
+├─ test/                   Pruebas e2e
+├─ postman/                Colección para probar la API
+├─ data/                   Base SQLite local (no se versiona)
+└─ frontend/app/           App móvil
+   └─ src/
+      ├─ routes/           index.tsx: orquesta las pantallas
+      ├─ features/comejave/screens/   auth, home/historial, menú, checkout
+      ├─ hooks/            useAuth, useCart, useOrders
+      └─ lib/              api.ts (cliente de la API), firebase.ts, menú
 ```
 
-### Qué hace cada parte
+## 2. Tecnologías
 
-- Backend: lógica de la API, entidades, validaciones, configuración, CRUD y conexión a base de datos.
-- Frontend: interfaz móvil con pantallas del flujo de compra y selección de menú.
-- data/: archivos locales de la base de datos SQLite.
-- dist/: salida compilada del backend y del frontend.
-- postman/: colección para probar endpoints.
+- **Backend:** Node.js, NestJS 12, TypeScript, TypeORM, SQLite (`better-sqlite3`) o PostgreSQL, Firebase Admin, Helmet, Throttler, Swagger.
+- **Frontend:** React 19, TanStack Start/Router/Query, Tailwind CSS 4, Firebase Auth, Lucide.
+- **Pruebas:** Vitest (backend y frontend).
 
----
+## 3. Requisitos
 
-## 2. Tecnologías usadas
+- Node.js 24 (ver `.nvmrc`) y npm.
+- Para el frontend, `bun` es opcional (el proyecto está conectado a Lovable y mantiene `bun.lock`); `npm` también funciona.
 
-### Backend
-
-- Node.js
-- NestJS
-- TypeScript
-- TypeORM
-- SQLite por defecto
-- PostgreSQL compatible
-
-### Frontend
-
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- Lucide React
-
----
-
-## 3. Requisitos previos
-
-Antes de ejecutar el proyecto necesitas:
-
-- Node.js 18 o superior
-- npm
-- Git
-- Visual Studio Code (opcional, pero recomendado)
-
----
-
-## 4. Instalación paso a paso
-
-### 4.1 Clonar el repositorio
+## 4. Instalación
 
 ```bash
 git clone https://github.com/Niko2361920/come-jave-back.git
 cd come-jave-back
+npm install                      # backend
+cd frontend/app && npm install   # frontend
 ```
 
-### 4.2 Instalar dependencias del backend
+## 5. Variables de entorno
 
-```bash
-npm install
-```
+### Backend (`.env` en la raíz)
 
-### 4.3 Instalar dependencias del frontend
-
-```bash
-cd frontend/app
-npm install
-```
-
-> Si la carpeta ya tiene dependencias instaladas, no es necesario volverlas a instalar.
-
----
-
-## 5. Configuración de variables de entorno
-
-En la raíz del backend crea un archivo `.env`.
-
-### Opción A: SQLite (por defecto)
+Mínimo para desarrollo local con SQLite y sin Firebase:
 
 ```env
 PORT=3000
 DB_TYPE=sqlite
-DB_SYNCHRONIZE=true
-DB_LOGGING=false
 DB_DATABASE=data/app.sqlite
+AUTH_ENABLED=false
 ```
 
-### Opción B: PostgreSQL
+| Variable | Por defecto | Descripción |
+| --- | --- | --- |
+| `PORT` | `3000` | Puerto de la API |
+| `DB_TYPE` | `sqlite` | `sqlite` o `postgres` |
+| `DB_DATABASE` | `data/app.sqlite` | Archivo SQLite o nombre de la base en Postgres |
+| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` | – | Obligatorias con `DB_TYPE=postgres` |
+| `DB_SYNCHRONIZE` | `true` en dev, `false` en producción | Con `true` TypeORM crea el esquema solo; **prohibido en producción**, ahí se usan migraciones |
+| `DB_LOGGING` | `false` | Log de queries |
+| `AUTH_ENABLED` | `true` | Con `false` no se verifica Firebase (solo desarrollo, **prohibido en producción**) |
+| `FIREBASE_PROJECT_ID` | – | Obligatoria si `AUTH_ENABLED=true` |
+| `ALLOWED_EMAIL_DOMAIN` | `javerianacali.edu.co` | Dominio permitido para usuarios |
+| `ADMIN_EMAILS` | vacío | Correos admin separados por coma (pueden ser de otro dominio) |
+| `CORS_ORIGINS` | `http://localhost:8080,http://localhost:5173` | Orígenes permitidos, separados por coma |
+| `SWAGGER_ENABLED` | `true` en dev, `false` en producción | Documentación en `/docs` |
 
-```env
-PORT=3000
-DB_TYPE=postgres
-DB_SYNCHRONIZE=true
-DB_LOGGING=false
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=tu_password
-DB_DATABASE=come_jave
-```
+Con `AUTH_ENABLED=false` la API acepta cualquier petición como admin; se puede simular otro usuario con los headers `x-dev-email` y `x-dev-admin: false`.
 
-> El backend ya está preparado para aceptar una base de datos SQLite local, lo que facilita correr el proyecto sin PostgreSQL instalado.
+### Frontend (`frontend/app/.env`, ver `.env.example`)
 
----
+- `VITE_FIREBASE_*`: configuración de Firebase Auth.
+- `VITE_API_URL`: URL del backend, sin barra final (ej. `http://localhost:3000`).
 
-## 6. Cómo arrancar el backend
+El frontend tiene dos modos:
 
-Desde la raíz del proyecto:
+- **Con `VITE_API_URL` y Firebase configurados:** sesión real (solo correos `@javerianacali.edu.co` verificados), menú enlazado a los productos de la API por `sku`, pedidos guardados en la base de datos y cancelables mientras estén pendientes.
+- **Sin alguno de los dos:** modo demo local; el historial y la sesión se guardan en `localStorage`.
+
+## 6. Arrancar el backend
 
 ```bash
-npm run start:dev
+npm run migration:run   # crea el esquema (si DB_SYNCHRONIZE=false)
+npm run seed            # carga el menú (idempotente: crea o actualiza por sku)
+npm run start:dev       # http://localhost:3000
 ```
 
-Este comando levanta la API en modo desarrollo con recarga automática.
+Con `DB_SYNCHRONIZE=true` (default en desarrollo) las migraciones no hacen falta. Comprobación rápida: `GET http://localhost:3000/health`. Swagger: `http://localhost:3000/docs`.
 
-### Producción
+Producción:
 
 ```bash
 npm run build
-npm run start:prod
+npm run start:prod      # exige AUTH_ENABLED=true y DB_SYNCHRONIZE=false
 ```
 
-### Verificar que el backend está activo
+Generar una migración tras cambiar una entidad: `npm run migration:generate -- src/migrations/<motor>/NombreCambio`.
 
-Abre el navegador o usa una petición HTTP:
+> SQLite escribe en un archivo local: en plataformas con disco efímero (como Vercel) los datos se pierden. Para desplegar usa PostgreSQL.
 
-```bash
-http://localhost:3000
-```
-
-Una ruta raíz puede devolver 404 si no hay una ruta inicial; eso es normal. Lo importante es que el servidor responda.
-
----
-
-## 7. Cómo arrancar el frontend
-
-Desde la carpeta del frontend:
+## 7. Arrancar el frontend
 
 ```bash
 cd frontend/app
-npm run dev -- --host 0.0.0.0
+npm run dev -- --host 0.0.0.0   # http://localhost:8080
 ```
 
-Luego abre en el navegador:
+## 8. Scripts
+
+**Backend:** `start`, `start:dev`, `build`, `start:prod`, `lint`, `format`, `test` (unitarias), `test:e2e`, `test:cov`, `seed`, `migration:run|generate|revert`.
+
+**Frontend:** `dev`, `build`, `preview`, `lint`, `test`.
+
+## 9. API
+
+Autenticación: `Authorization: Bearer <ID token de Firebase>`. Rutas públicas: `GET /health`, `GET /products`, `GET /products/:id`. Las marcadas **Admin** requieren un correo en `ADMIN_EMAILS`.
+
+| Recurso | Endpoints |
+| --- | --- |
+| Usuarios | `POST /users`, `GET /users/me`, `GET /users` (Admin), `GET/PUT/DELETE /users/:id` |
+| Productos | `GET /products` (filtros: `name`, `minPrice`, `maxPrice`, `minStock`, `maxStock`), `GET /products/:id`; `POST`, `PUT`, `DELETE` (Admin) |
+| Pedidos | `POST /orders`, `GET /orders/me`, `GET /orders/:id`, `PUT /orders/:id/cancel`; `GET /orders`, `PUT /orders/:id`, `DELETE /orders/:id` (Admin) |
+
+Detalles de comportamiento:
+
+- Los DTOs se validan globalmente: campos desconocidos devuelven 400.
+- El dueño de un pedido sale siempre del token, no del body.
+- Crear un pedido descuenta el stock de forma atómica; cancelarlo (solo si está pendiente) lo devuelve.
+- Pagar con Nequi exige `paymentReference` (6 a 20 dígitos).
+- 100 peticiones por minuto por IP.
+
+## 10. Flujo de la app
+
+Login → Crear cuenta → Menú principal → Restaurante → Categoría → Carrito → Pago (efectivo, o Nequi con comprobante) → Pago en espera → Pedido registrado → Historial. El carrito es de un solo restaurante: al agregar un producto de otro, el carrito se reemplaza.
+
+## 11. Menú
+
+**Ventolini 🍕:** Bolognesa $22.000, Alfredo $24.000, Pesto $23.000, Margarita $26.000, Pepperoni $29.000, Hawaiana $27.000.
+
+**La Frute 🥗:** Bowl Açaí $18.000, Bowl Proteico $21.000, Bowl Tropical $17.000, César $19.000, Mediterránea $20.000, Verde $16.000.
+
+El menú vive en `frontend/app/src/lib/comejave-data.ts` y en `src/database/menu.seed.ts`; deben mantenerse iguales (mismos `sku` y precios).
+
+## 12. Pruebas
 
 ```bash
-http://localhost:8080/
+npm test          # unitarias (guard de Firebase, validación de entorno)
+npm run test:e2e  # API completa con SQLite en memoria
 ```
 
----
+Para correr los e2e contra PostgreSQL: `E2E_DB=postgres` más las variables `DB_*`.
 
-## 8. Scripts útiles
+## 13. Licencia
 
-### Backend
-
-```bash
-npm run start
-npm run start:dev
-npm run start:debug
-npm run build
-npm run test
-npm run test:e2e
-npm run lint
-```
-
-### Frontend
-
-```bash
-npm run dev
-npm run build
-npm run preview
-npm run lint
-```
-
----
-
-## 9. API principal del backend
-
-La app backend tiene módulos para usuarios, productos y pedidos.
-
-### Usuarios
-
-- `POST /users`
-- `GET /users`
-- `GET /users/:id`
-- `PUT /users/:id`
-- `DELETE /users/:id`
-
-### Productos
-
-- `POST /products`
-- `GET /products`
-- `GET /products/:id`
-- `PUT /products/:id`
-- `DELETE /products/:id`
-
-Ejemplo con filtros:
-
-```http
-GET /products?name=whey&minPrice=10&maxPrice=200&minStock=1
-```
-
-### Pedidos
-
-- `POST /orders`
-- `GET /orders`
-- `GET /orders/:id`
-- `GET /orders/user/:userId`
-- `PUT /orders/:id`
-- `PUT /orders/:id/cancel`
-- `DELETE /orders/:id`
-
-> El CRUD base quedó disponible, pero para la app móvil de Come Jave lo más importante es el flujo de pedido y el menú estático, no crear productos desde la app.
-
----
-
-## 10. Flujo de la app Come Jave
-
-La interfaz está pensada como una app móvil centrada en celular, con 9 pantallas:
-
-1. Login
-2. Crear cuenta
-3. Menú principal
-4. Menú del restaurante
-5. Categoría de productos
-6. Pago
-7. Datos de pago online (Nequi)
-8. Pago en espera
-9. Pago exitoso
-
-La lógica de historial y carrito se maneja con `localStorage` para que sobreviva recargas.
-
----
-
-## 11. Menú y restaurantes incluidos
-
-### Ventolini 🍕
-
-- Pastas
-  - Bolognesa $22.000
-  - Alfredo $24.000
-  - Pesto $23.000
-- Pizzas
-  - Margarita $26.000
-  - Pepperoni $29.000
-  - Hawaiana $27.000
-
-### La Frute 🥗
-
-- Bowls
-  - Açaí $18.000
-  - Proteico $21.000
-  - Tropical $17.000
-- Ensaladas
-  - César $19.000
-  - Mediterránea $20.000
-  - Verde $16.000
-
----
-
-## 12. Recomendación de uso real
-
-Para esta app en particular, lo más correcto es:
-
-- Mantener el CRUD base del backend como respaldo académico y técnico.
-- Usar el frontend con menú fijo y datos programados.
-- Evitar crear productos desde la UI si los productos son siempre los mismos.
-- Usar el carrito y el historial del cliente en frontend con `localStorage`.
-
-Esto hace que la solución se vea más realista para una app universitaria y evita crear un sistema de inventario complejo cuando la app solo necesita vender comida ya definida.
-
----
-
-## 13. Buenas prácticas para seguir trabajando
-
-1. No mezclar lógica de negocio del frontend con el backend si el flujo es local.
-2. Mantener los nombres de carpetas claros.
-3. Verificar que el backend siga corriendo antes de probar el frontend.
-4. Usar Postman o la colección de la carpeta `postman/` para probar la API.
-5. Cuando cambies la estructura, verifica con `npm run build`.
-
----
-
-## 14. Licencia
-
-Este proyecto se mantiene bajo licencia UNLICENSED.
-
----
-
-## 15. Siguientes pasos recomendados
-
-- Dejar una versión final del backend más limpia y enfocada en Come Jave.
-- Ajustar la interfaz móvil para una vista tipo celular de 420px.
-- Conectar la app con un backend más real si se quiere persistencia en base de datos.
-- Preparar una versión demo para presentación del proyecto.
+UNLICENSED.
