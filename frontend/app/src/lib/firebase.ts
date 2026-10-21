@@ -1,4 +1,4 @@
-import type { FirebaseApp } from "firebase/app";
+import type { FirebaseApp, FirebaseOptions } from "firebase/app";
 import type { Auth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -13,9 +13,9 @@ const firebaseConfig = {
 
 const hasRequiredConfig = Boolean(
   firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId &&
-    firebaseConfig.appId,
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.appId,
 );
 
 export const firebaseEnabled = hasRequiredConfig;
@@ -33,7 +33,7 @@ export const getFirebaseApp = async () => {
   }
 
   const { getApp, getApps, initializeApp } = await import("firebase/app");
-  firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig as FirebaseOptions);
   return firebaseApp;
 };
 

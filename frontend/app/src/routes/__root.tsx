@@ -2,12 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  type ErrorComponentProps,
   createRootRouteWithContext,
   useRouter,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -34,7 +35,11 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error: caught, reset }: ErrorComponentProps) {
+  const error = useMemo(
+    () => (caught instanceof Error ? caught : new Error(String(caught))),
+    [caught],
+  );
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -86,15 +91,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Come Jave · Pide en el campus Javeriana Cali" },
       {
         property: "og:description",
-        content: "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.",
+        content:
+          "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Come Jave · Pide en el campus Javeriana Cali" },
-      { name: "twitter:description", content: "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e53712a2-51bb-4965-a432-3b132114d3c1/id-preview-ecbf595c--c8009be4-fc9b-4a85-8ca6-11bf4f5fb0c2.lovable.app-1785770312736.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e53712a2-51bb-4965-a432-3b132114d3c1/id-preview-ecbf595c--c8009be4-fc9b-4a85-8ca6-11bf4f5fb0c2.lovable.app-1785770312736.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e53712a2-51bb-4965-a432-3b132114d3c1/id-preview-ecbf595c--c8009be4-fc9b-4a85-8ca6-11bf4f5fb0c2.lovable.app-1785770312736.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e53712a2-51bb-4965-a432-3b132114d3c1/id-preview-ecbf595c--c8009be4-fc9b-4a85-8ca6-11bf4f5fb0c2.lovable.app-1785770312736.png",
+      },
     ],
     links: [
       {

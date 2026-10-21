@@ -22,7 +22,13 @@ export const restaurants: Restaurant[] = [
         emoji: "🍝",
         name: "Pastas",
         items: [
-          { id: "p1", name: "Bolognesa", desc: "Salsa de carne y tomate", price: 22000, emoji: "🍝" },
+          {
+            id: "p1",
+            name: "Bolognesa",
+            desc: "Salsa de carne y tomate",
+            price: 22000,
+            emoji: "🍝",
+          },
           { id: "p2", name: "Alfredo", desc: "Crema, queso parmesano", price: 24000, emoji: "🍜" },
           { id: "p3", name: "Pesto", desc: "Albahaca y piñones", price: 23000, emoji: "🌿" },
         ],
@@ -32,7 +38,13 @@ export const restaurants: Restaurant[] = [
         emoji: "🍕",
         name: "Pizzas",
         items: [
-          { id: "z1", name: "Margarita", desc: "Tomate, mozzarella, albahaca", price: 26000, emoji: "🍕" },
+          {
+            id: "z1",
+            name: "Margarita",
+            desc: "Tomate, mozzarella, albahaca",
+            price: 26000,
+            emoji: "🍕",
+          },
           { id: "z2", name: "Pepperoni", desc: "Doble pepperoni", price: 29000, emoji: "🍕" },
           { id: "z3", name: "Hawaiana", desc: "Jamón y piña", price: 27000, emoji: "🍍" },
         ],
@@ -51,8 +63,20 @@ export const restaurants: Restaurant[] = [
         emoji: "🥣",
         name: "Bowls",
         items: [
-          { id: "b1", name: "Bowl Açaí", desc: "Granola, banano, fresa", price: 18000, emoji: "🫐" },
-          { id: "b2", name: "Bowl Proteico", desc: "Pollo, quinua, aguacate", price: 21000, emoji: "🥑" },
+          {
+            id: "b1",
+            name: "Bowl Açaí",
+            desc: "Granola, banano, fresa",
+            price: 18000,
+            emoji: "🫐",
+          },
+          {
+            id: "b2",
+            name: "Bowl Proteico",
+            desc: "Pollo, quinua, aguacate",
+            price: 21000,
+            emoji: "🥑",
+          },
           { id: "b3", name: "Bowl Tropical", desc: "Mango, piña, coco", price: 17000, emoji: "🥭" },
         ],
       },
@@ -61,9 +85,27 @@ export const restaurants: Restaurant[] = [
         emoji: "🥗",
         name: "Ensaladas",
         items: [
-          { id: "e1", name: "César", desc: "Pollo, crutones, parmesano", price: 19000, emoji: "🥗" },
-          { id: "e2", name: "Mediterránea", desc: "Tomate cherry, feta, olivas", price: 20000, emoji: "🫒" },
-          { id: "e3", name: "Verde", desc: "Espinaca, pepino, vinagreta", price: 16000, emoji: "🥬" },
+          {
+            id: "e1",
+            name: "César",
+            desc: "Pollo, crutones, parmesano",
+            price: 19000,
+            emoji: "🥗",
+          },
+          {
+            id: "e2",
+            name: "Mediterránea",
+            desc: "Tomate cherry, feta, olivas",
+            price: 20000,
+            emoji: "🫒",
+          },
+          {
+            id: "e3",
+            name: "Verde",
+            desc: "Espinaca, pepino, vinagreta",
+            price: 16000,
+            emoji: "🥬",
+          },
         ],
       },
     ],
@@ -72,3 +114,27 @@ export const restaurants: Restaurant[] = [
 
 export const formatCOP = (value: number) =>
   "$" + value.toLocaleString("es-CO", { maximumFractionDigits: 0 });
+
+/** sku que usa la API para este producto: `<restaurante>:<id del menú>`. */
+export const skuFor = (restaurantId: Restaurant["id"], itemId: string) =>
+  `${restaurantId}:${itemId}`;
+
+type MenuEntry = { restaurant: Restaurant; category: Category; item: Product };
+
+const menuBySku = new Map<string, MenuEntry>(
+  restaurants.flatMap((restaurant) =>
+    restaurant.categories.flatMap((category) =>
+      category.items.map((item): [string, MenuEntry] => [
+        skuFor(restaurant.id, item.id),
+        { restaurant, category, item },
+      ]),
+    ),
+  ),
+);
+
+export const findMenuEntryBySku = (sku: string | null | undefined) =>
+  sku ? menuBySku.get(sku) : undefined;
+
+/** Los ids del menú (p1, z1, b1, e1...) son únicos entre restaurantes. */
+export const findMenuEntryByItemId = (itemId: string) =>
+  [...menuBySku.values()].find((entry) => entry.item.id === itemId);
