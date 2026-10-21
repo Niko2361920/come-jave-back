@@ -35,15 +35,18 @@ import { UsersModule } from './users/users.module';
           autoLoadEntities: true,
           synchronize,
           logging,
-          // Con synchronize apagado el esquema lo crean las migraciones.
-          migrations: [
-            join(
-              __dirname,
-              'migrations',
-              databaseType === 'postgres' ? 'postgres' : 'sqlite',
-              '*.{js,ts}',
-            ),
-          ],
+          // Con synchronize apagado el esquema lo crean las migraciones; con
+          // synchronize encendido (dev/tests) ni siquiera se cargan.
+          migrations: synchronize
+            ? []
+            : [
+                join(
+                  __dirname,
+                  'migrations',
+                  databaseType === 'postgres' ? 'postgres' : 'sqlite',
+                  '*.{js,ts}',
+                ),
+              ],
           migrationsRun: !synchronize,
         };
 

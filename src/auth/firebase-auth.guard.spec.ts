@@ -8,12 +8,12 @@ import { Reflector } from '@nestjs/core';
 import { FirebaseAuthGuard } from './firebase-auth.guard';
 import { IS_ADMIN_KEY, IS_PUBLIC_KEY } from './auth.decorators';
 
-const verifyIdToken = jest.fn();
-jest.mock('firebase-admin/app', () => ({
+const { verifyIdToken } = vi.hoisted(() => ({ verifyIdToken: vi.fn() }));
+vi.mock('firebase-admin/app', () => ({
   getApps: () => [],
   initializeApp: () => ({}),
 }));
-jest.mock('firebase-admin/auth', () => ({
+vi.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken }),
 }));
 
@@ -51,7 +51,11 @@ function contextWith(headers: Record<string, string> = {}) {
 const bearer = { authorization: 'Bearer token-123' };
 
 describe('FirebaseAuthGuard', () => {
-  beforeEach(() => verifyIdToken.mockReset());
+  beforeEach(() => {
+    // Con llaves: si el callback devolviera el mock, Vitest lo ejecutaría
+    // como función de limpieza al terminar cada test.
+    verifyIdToken.mockReset();
+  });
 
   it('rechaza peticiones sin token', async () => {
     const { context } = contextWith();
