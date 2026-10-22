@@ -1,102 +1,124 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import type { AuthenticatedUser } from '../../auth/auth.types';
+import { Product } from '../../products/entities/product.entity';
+import { User } from '../../users/entities/user.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { FilterOrderDto } from '../dto/filter-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
-import { Order, OrderStatus } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
-import { User } from '../../users/entities/user.entity';
-import { Product } from '../../products/entities/product.entity';
+import { Order, OrderStatus, PaymentMethod } from '../entities/order.entity';
+
+const MAX_UNITS_PER_PRODUCT = 100;
+const ORDER_RELATIONS = { items: true, user: true } as const;
 
 @Injectable()
 export class OrdersService {
+  // SQLite usa una sola conexión: dos transacciones simultáneas se pisarían.
+  // En ese caso las escrituras de pedidos se encolan; en Postgres no hace falta.
+  private writeQueue: Promise<unknown> = Promise.resolve();
+
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
     private readonly dataSource: DataSource,
   ) {}
 
-  // Crear orden con transacción — ejemplo didáctico de relaciones y consistencia
-  async create(createOrderDto: CreateOrderDto): Promise<Order> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      // 1. Validar usuario existe y está activo
-      const user = await queryRunner.manager.findOneBy(User, {
-        id: createOrderDto.userId,
-        isActive: true,
-      });
-      if (!user) {
-        throw new NotFoundException(
-          `El usuario con id ${createOrderDto.userId} no existe o está inactivo`,
+  /**
+   * Crea el pedido descontando el stock de forma atómica: el UPDATE solo
+   * aplica si todavía alcanza el inventario, así dos pedidos simultáneos no
+   * pueden vender más de lo que hay.
+   */
+  async create(
+    dto: CreateOrderDto,
+    authUser: AuthenticatedUser,
+  ): Promise<Order> {
+    // Si el mismo producto llega repetido se suman las cantidades.
+    const quantities = new Map<string, number>();
+    for (const item of dto.items) {
+      quantities.set(
+        item.productId,
+        (quantities.get(item.productId) ?? 0) + item.quantity,
+      );
+    }
+    for (const [productId, quantity] of quantities) {
+      if (quantity > MAX_UNITS_PER_PRODUCT) {
+        throw new BadRequestException(
+          `Máximo ${MAX_UNITS_PER_PRODUCT} unidades por producto (producto ${productId})`,
         );
       }
+    }
 
-      // 2. Validar productos y stock, calcular total y preparar items
-      let total = 0;
-      const orderItems: Partial<OrderItem>[] = [];
+    const orderId = await this.runExclusive(() =>
+      this.dataSource.transaction(async (manager) => {
+        const user = await this.resolveOrderOwner(manager, dto, authUser);
 
-      for (const itemDto of createOrderDto.items) {
-        const product = await queryRunner.manager.findOneBy(Product, {
-          id: itemDto.productId,
+        const productIds = [...quantities.keys()];
+        const products = await manager.findBy(Product, {
+          id: In(productIds),
           isActive: true,
         });
-        if (!product) {
+        const productsById = new Map(products.map((p) => [p.id, p]));
+        const missing = productIds.find((id) => !productsById.has(id));
+        if (missing) {
           throw new NotFoundException(
-            `El producto con id ${itemDto.productId} no existe o está inactivo`,
-          );
-        }
-        if (product.stock < itemDto.quantity) {
-          throw new BadRequestException(
-            `Stock insuficiente para ${product.name}: disponible ${product.stock}, solicitado ${itemDto.quantity}`,
+            `El producto con id ${missing} no existe o está inactivo`,
           );
         }
 
-        const unitPrice = Number(product.price);
-        total += unitPrice * itemDto.quantity;
+        let totalCents = 0;
+        const items: Partial<OrderItem>[] = [];
 
-        // Descontar stock dentro de la transacción
-        product.stock -= itemDto.quantity;
-        await queryRunner.manager.save(Product, product);
+        for (const [productId, quantity] of quantities) {
+          const product = productsById.get(productId)!;
 
-        orderItems.push({
-          productId: product.id,
-          quantity: itemDto.quantity,
-          unitPrice,
+          const result = await manager
+            .createQueryBuilder()
+            .update(Product)
+            .set({ stock: () => 'stock - :quantity' })
+            .where('id = :id AND stock >= :quantity', {
+              id: productId,
+              quantity,
+            })
+            .execute();
+          if (!result.affected) {
+            throw new BadRequestException(
+              `Stock insuficiente para ${product.name}: solicitado ${quantity}`,
+            );
+          }
+
+          const unitPrice = Number(product.price);
+          totalCents += Math.round(unitPrice * 100) * quantity;
+          items.push({ productId, quantity, unitPrice });
+        }
+
+        const paymentMethod = dto.paymentMethod ?? PaymentMethod.CASH;
+        const order = manager.create(Order, {
+          userId: user.id,
+          paymentMethod,
+          paymentReference:
+            paymentMethod === PaymentMethod.NEQUI
+              ? (dto.paymentReference ?? null)
+              : null,
+          total: totalCents / 100,
+          status: OrderStatus.PENDING,
+          items: items as OrderItem[],
         });
-      }
+        return (await manager.save(Order, order)).id;
+      }),
+    );
 
-      // 3. Crear orden con items en cascada
-      const order = queryRunner.manager.create(Order, {
-        userId: user.id,
-        total: Number(total.toFixed(2)),
-        status: OrderStatus.PENDING,
-        items: orderItems as OrderItem[],
-      });
-
-      const savedOrder = await queryRunner.manager.save(Order, order);
-
-      await queryRunner.commitTransaction();
-
-      // 4. Retornar orden completa con relaciones (items + product eager)
-      return this.findOne(savedOrder.id);
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.getOrder(orderId);
   }
 
-  // Rama 4: filtros simples (status, userId)
-  // Ej: GET /orders?status=PENDING&userId=1234567890
+  // Solo admin. Ej: GET /orders?status=PENDING&userId=<uuid>
   async findAll(filter?: FilterOrderDto): Promise<Order[]> {
     const qb = this.ordersRepository
       .createQueryBuilder('order')
@@ -115,14 +137,138 @@ export class OrdersService {
     return qb.getMany();
   }
 
-  async findOne(id: string): Promise<Order> {
+  async findOne(id: string, authUser: AuthenticatedUser): Promise<Order> {
+    const order = await this.getOrder(id);
+    this.assertCanAccess(order, authUser);
+    return order;
+  }
+
+  async findMine(authUser: AuthenticatedUser): Promise<Order[]> {
+    return this.ordersRepository.find({
+      where: { user: { email: authUser.email } },
+      relations: ORDER_RELATIONS,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findByUser(
+    userId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<Order[]> {
+    if (!authUser.isAdmin) {
+      const owner = await this.dataSource
+        .getRepository(User)
+        .findOneBy({ id: userId });
+      if (!owner || owner.email !== authUser.email) {
+        throw new ForbiddenException('No tienes acceso a estos pedidos');
+      }
+    }
+    return this.ordersRepository.find({
+      where: { userId },
+      relations: ORDER_RELATIONS,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // Solo admin. Transiciones válidas: PENDING -> PAID y PENDING -> CANCELLED.
+  async update(
+    id: string,
+    dto: UpdateOrderDto,
+    authUser: AuthenticatedUser,
+  ): Promise<Order> {
+    const order = await this.getOrder(id);
+    if (!dto.status || dto.status === order.status) {
+      return order;
+    }
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Solo se puede cambiar el estado desde PENDING, estado actual: ${order.status}`,
+      );
+    }
+    if (dto.status === OrderStatus.CANCELLED) {
+      return this.cancel(id, authUser); // también restaura el stock
+    }
+    if (dto.status === OrderStatus.PAID) {
+      const result = await this.ordersRepository.update(
+        { id, status: OrderStatus.PENDING },
+        { status: OrderStatus.PAID },
+      );
+      if (!result.affected) {
+        throw new ConflictException('La orden cambió de estado, reintenta');
+      }
+      return this.getOrder(id);
+    }
+    throw new BadRequestException(
+      `Transición no permitida: ${order.status} -> ${dto.status}`,
+    );
+  }
+
+  // Cancelar = CANCELLED + devolver el stock, todo en una transacción.
+  async cancel(id: string, authUser: AuthenticatedUser): Promise<Order> {
+    await this.runExclusive(() =>
+      this.dataSource.transaction(async (manager) => {
+        const order = await manager.findOne(Order, {
+          where: { id },
+          relations: ORDER_RELATIONS,
+        });
+        if (!order) {
+          throw new NotFoundException(`La orden con id ${id} no existe`);
+        }
+        this.assertCanAccess(order, authUser);
+        if (order.status === OrderStatus.CANCELLED) {
+          throw new BadRequestException('La orden ya está cancelada');
+        }
+        if (order.status === OrderStatus.PAID) {
+          throw new BadRequestException(
+            'No se puede cancelar una orden pagada',
+          );
+        }
+
+        // El UPDATE condicionado evita devolver el stock dos veces si dos
+        // cancelaciones llegan a la vez.
+        const result = await manager.update(
+          Order,
+          { id, status: OrderStatus.PENDING },
+          { status: OrderStatus.CANCELLED },
+        );
+        if (!result.affected) {
+          throw new ConflictException('La orden cambió de estado, reintenta');
+        }
+
+        for (const item of order.items) {
+          await manager.increment(
+            Product,
+            { id: item.productId },
+            'stock',
+            item.quantity,
+          );
+        }
+      }),
+    );
+    return this.getOrder(id);
+  }
+
+  // Solo admin. Las órdenes pagadas no se borran (son registro de ventas).
+  async remove(id: string, authUser: AuthenticatedUser): Promise<void> {
+    const order = await this.getOrder(id);
+    if (order.status === OrderStatus.PAID) {
+      throw new BadRequestException('No se puede borrar una orden pagada');
+    }
+    if (order.status === OrderStatus.PENDING) {
+      await this.cancel(id, authUser); // devuelve el stock antes de borrar
+    }
+    await this.runExclusive(() =>
+      this.dataSource.transaction(async (manager) => {
+        await manager.delete(OrderItem, { orderId: id });
+        await manager.delete(Order, { id });
+      }),
+    );
+  }
+
+  private async getOrder(id: string): Promise<Order> {
     const order = await this.ordersRepository.findOne({
       where: { id },
-      relations: {
-        items: true,
-        user: true,
-      },
-
+      relations: ORDER_RELATIONS,
     });
     if (!order) {
       throw new NotFoundException(`La orden con id ${id} no existe`);
@@ -130,87 +276,44 @@ export class OrdersService {
     return order;
   }
 
-  findByUser(userId: string): Promise<Order[]> {
-    return this.ordersRepository.find({
-      where: { userId },
-      relations: {
-        items: true,
-        user: true,
-      },
-
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  async update(id: string, dto: UpdateOrderDto): Promise<Order> {
-    const order = await this.findOne(id);
-    // Solo permitimos transición PENDING -> PAID/CANCELLED en este ejemplo
-    if (dto.status && dto.status !== order.status) {
-      if (order.status !== OrderStatus.PENDING) {
-        throw new BadRequestException(
-          `Solo se puede cambiar estado desde PENDING, estado actual: ${order.status}`,
-        );
-      }
-      // Si cancela, restaurar stock
-      if (dto.status === OrderStatus.CANCELLED) {
-        return this.cancel(id);
-      }
-      order.status = dto.status;
-      return this.ordersRepository.save(order);
+  private assertCanAccess(order: Order, authUser: AuthenticatedUser): void {
+    if (!authUser.isAdmin && order.user?.email !== authUser.email) {
+      throw new ForbiddenException('No tienes acceso a esta orden');
     }
-    return order;
   }
 
-  // Cancelar = CANCELLED + restaurar stock (transacción)
-  async cancel(id: string): Promise<Order> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const order = await queryRunner.manager.findOne(Order, {
-        where: { id },
-        relations: {items:true},
-      });
-      if (!order) {
-        throw new NotFoundException(`La orden con id ${id} no existe`);
-      }
-      if (order.status === OrderStatus.CANCELLED) {
-        throw new BadRequestException('La orden ya está cancelada');
-      }
-      if (order.status === OrderStatus.PAID) {
-        throw new BadRequestException('No se puede cancelar una orden pagada');
-      }
-
-      // Restaurar stock de cada producto
-      for (const item of order.items) {
-        const product = await queryRunner.manager.findOneBy(Product, {
-          id: item.productId,
+  private async resolveOrderOwner(
+    manager: EntityManager,
+    dto: CreateOrderDto,
+    authUser: AuthenticatedUser,
+  ): Promise<User> {
+    if (dto.userId && !authUser.isAdmin) {
+      throw new ForbiddenException(
+        'Solo un administrador puede crear pedidos a nombre de otro usuario',
+      );
+    }
+    const user = dto.userId
+      ? await manager.findOneBy(User, { id: dto.userId, isActive: true })
+      : await manager.findOneBy(User, {
+          email: authUser.email,
+          isActive: true,
         });
-        if (product) {
-          product.stock += item.quantity;
-          await queryRunner.manager.save(Product, product);
-        }
-      }
-
-      order.status = OrderStatus.CANCELLED;
-      await queryRunner.manager.save(Order, order);
-      await queryRunner.commitTransaction();
-      return this.findOne(id);
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
+    if (!user) {
+      throw new NotFoundException(
+        dto.userId
+          ? `El usuario con id ${dto.userId} no existe o está inactivo`
+          : 'Primero debes registrar tu perfil con POST /users',
+      );
     }
+    return user;
   }
 
-  // DELETE hard para didáctica — en producción preferir soft/cancel
-  async remove(id: string): Promise<void> {
-    const order = await this.findOne(id);
-    // Si está PENDING, restauramos stock antes de borrar
-    if (order.status === OrderStatus.PENDING) {
-      await this.cancel(id);
+  private runExclusive<T>(task: () => Promise<T>): Promise<T> {
+    if (this.dataSource.options.type !== 'better-sqlite3') {
+      return task();
     }
-    await this.ordersRepository.remove(order);
+    const run = this.writeQueue.then(task, task);
+    this.writeQueue = run.catch(() => undefined);
+    return run;
   }
 }

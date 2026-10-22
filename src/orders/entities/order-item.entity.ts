@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Order } from './order.entity';
+import { numericTransformer } from '../../common/numeric.transformer';
 import { Product } from '../../products/entities/product.entity';
 
 @Entity('order_items')
@@ -23,7 +24,7 @@ export class OrderItem {
   orderId!: string;
 
   // Relación N:1 hacia Product — muchos items referencian un producto
-  // eager:true carga el producto automáticamente al hacer find de OrderItem (didáctico)
+  // eager:true carga el producto automáticamente al hacer find de OrderItem
   @ManyToOne(() => Product, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'productId' })
   product!: Product;
@@ -35,6 +36,11 @@ export class OrderItem {
   quantity!: number;
 
   // Precio unitario al momento de comprar — no cambia si Product.price cambia luego
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   unitPrice!: number;
 }

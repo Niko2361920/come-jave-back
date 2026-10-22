@@ -55,13 +55,7 @@ export function Field({
   );
 }
 
-export function Screen({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+export function Screen({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn("animate-in fade-in slide-in-from-right-3 duration-300", className)}>
       {children}
