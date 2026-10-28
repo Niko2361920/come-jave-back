@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Btn, Field, Screen } from "@/components/comejave/ui";
+import { Btn, Field, Notice, Screen } from "@/components/comejave/ui";
 import { Brand, Header, PasswordField } from "@/components/comejave/layout";
 import type { useAuth } from "@/hooks/useAuth";
 import { firebaseEnabled } from "@/lib/firebase";
@@ -9,16 +9,8 @@ type Auth = ReturnType<typeof useAuth>;
 function Messages({ auth }: { auth: Auth }) {
   return (
     <>
-      {auth.error && (
-        <p role="alert" className="text-center text-sm font-medium text-red-600">
-          {auth.error}
-        </p>
-      )}
-      {auth.notice && (
-        <p role="status" className="text-center text-sm font-medium text-primary">
-          {auth.notice}
-        </p>
-      )}
+      {auth.error && <Notice>{auth.error}</Notice>}
+      {auth.notice && <Notice tone="info">{auth.notice}</Notice>}
     </>
   );
 }
@@ -34,14 +26,19 @@ function GoogleButton({
 }) {
   if (!firebaseEnabled) return null;
   return (
-    <button
-      type="button"
-      onClick={() => void auth.signInWithGoogle()}
-      disabled={auth.loading}
-      className={`w-full rounded-full border border-primary/15 bg-white px-5 py-3 text-[15px] font-bold text-primary transition-colors hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-70 ${className ?? ""}`}
-    >
-      {auth.loading ? "Conectando..." : label}
-    </button>
+    <>
+      <div className="flex items-center gap-3 text-[13px] text-muted-foreground" aria-hidden>
+        <span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" />
+      </div>
+      <button
+        type="button"
+        onClick={() => void auth.signInWithGoogle()}
+        disabled={auth.loading}
+        className={`min-h-12 w-full rounded-xl border border-primary/20 bg-white px-5 py-3 text-[15px] font-semibold text-primary transition-colors hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-70 ${className ?? ""}`}
+      >
+        {auth.loading ? "Conectando…" : label}
+      </button>
+    </>
   );
 }
 
@@ -63,27 +60,34 @@ export function LoginScreen({ auth, onSignup }: { auth: Auth; onSignup: () => vo
           placeholder={firebaseEnabled ? "nombre@javerianacali.edu.co" : "tu.usuario"}
           autoComplete="username"
           inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
         <PasswordField
+          required
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
         <Btn full type="submit" className="mt-2" disabled={auth.loading}>
-          {auth.loading ? "Ingresando..." : "Ingresar"}
+          {auth.loading ? "Ingresando…" : "Ingresar"}
         </Btn>
+        <Messages auth={auth} />
+        <GoogleButton auth={auth} label="Continuar con Google" />
       </form>
-      <GoogleButton auth={auth} label="Continuar con Google" className="mx-auto" />
-      <Messages auth={auth} />
-      <button
-        type="button"
-        onClick={onSignup}
-        className="mx-auto rounded-full bg-accent-soft px-5 py-2.5 text-[15px] font-bold text-accent-foreground transition-colors hover:bg-accent active:bg-accent"
-      >
-        Crear cuenta
-      </button>
+      <p className="text-center text-[15px] text-muted-foreground">
+        ¿Primera vez?{" "}
+        <button
+          type="button"
+          onClick={onSignup}
+          className="rounded-md px-1 font-bold text-primary underline decoration-accent decoration-2 underline-offset-4 hover:decoration-primary"
+        >
+          Crea tu cuenta
+        </button>
+      </p>
     </Screen>
   );
 }
@@ -124,20 +128,27 @@ export function SignupScreen({
           type="email"
           placeholder="nombre@javerianacali.edu.co"
           autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          {...(firebaseEnabled ? { hint: "Solo correos @javerianacali.edu.co" } : {})}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
         <PasswordField
+          required
+          minLength={6}
+          hint="Mínimo 6 caracteres."
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
         <Btn full type="submit" variant="accent" className="mt-2" disabled={auth.loading}>
-          {auth.loading ? "Creando..." : "Crear"}
+          {auth.loading ? "Creando cuenta…" : "Crear cuenta"}
         </Btn>
+        <Messages auth={auth} />
+        <GoogleButton auth={auth} label="Registrarme con Google" />
       </form>
-      <GoogleButton auth={auth} label="Registrarme con Google" />
-      <Messages auth={auth} />
     </Screen>
   );
 }
