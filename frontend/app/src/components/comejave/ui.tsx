@@ -20,15 +20,15 @@ export function Btn({ variant = "primary", full, className, type = "button", ...
       type={type}
       {...props}
       className={cn(
-        "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-[15px] font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40",
+        "pressable inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-[17px] font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40",
         full && "w-full",
         variant === "primary" &&
           "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-hover",
         variant === "accent" &&
           "bg-accent text-accent-foreground hover:bg-accent-hover active:bg-accent-hover",
         variant === "outline" &&
-          "border border-border bg-background text-foreground hover:bg-secondary active:bg-secondary",
-        variant === "ghost" && "text-primary hover:bg-secondary active:bg-secondary",
+          "bg-card text-primary ring-1 ring-separator hover:bg-secondary active:bg-secondary",
+        variant === "ghost" && "text-primary hover:bg-secondary/70 active:bg-secondary",
         className,
       )}
     />
@@ -56,7 +56,7 @@ export function Field({
   const describedBy = error || hint ? `${inputId}-desc` : undefined;
   return (
     <div>
-      <label htmlFor={inputId} className="mb-2 block text-[13px] font-medium text-muted-foreground">
+      <label htmlFor={inputId} className="mb-1.5 block text-[14px] font-semibold text-foreground">
         {label}
       </label>
       <div className="relative">
@@ -66,7 +66,7 @@ export function Field({
           aria-describedby={describedBy}
           {...props}
           className={cn(
-            "w-full rounded-xl border bg-card px-4 py-3.5 text-[16px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary",
+            "w-full rounded-2xl border bg-card px-4 py-3.5 text-[17px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary",
             error ? "border-destructive" : "border-input",
             endAdornment && "pr-12",
             className,
@@ -134,7 +134,7 @@ export function QtyStepper({
   const button = size === "sm" ? "h-9 w-9" : "h-11 w-11";
   return (
     <div
-      className="flex items-center gap-1 rounded-full bg-accent p-0.5 text-accent-foreground"
+      className="flex items-center gap-0.5 rounded-full bg-[var(--r,var(--primary))] p-0.5 text-white shadow-[0_4px_12px_-4px_var(--r,var(--primary))]"
       role="group"
       aria-label={`Cantidad de ${name}`}
     >
@@ -143,7 +143,7 @@ export function QtyStepper({
         onClick={onDecrement}
         aria-label={qty === 1 ? `Quitar ${name}` : `Quitar uno de ${name}`}
         className={cn(
-          "flex items-center justify-center rounded-full transition-colors hover:bg-accent-hover",
+          "pressable flex items-center justify-center rounded-full transition-colors hover:bg-white/15",
           button,
         )}
       >
@@ -153,7 +153,7 @@ export function QtyStepper({
           <Minus className="h-4 w-4" strokeWidth={2.5} />
         )}
       </button>
-      <span className="min-w-5 text-center text-[15px] font-bold tabular-nums" aria-live="polite">
+      <span className="min-w-5 text-center text-[16px] font-bold tabular-nums" aria-live="polite">
         {qty}
       </span>
       <button
@@ -161,7 +161,7 @@ export function QtyStepper({
         onClick={onIncrement}
         aria-label={`Agregar otro ${name}`}
         className={cn(
-          "flex items-center justify-center rounded-full transition-colors hover:bg-accent-hover",
+          "pressable flex items-center justify-center rounded-full transition-colors hover:bg-white/15",
           button,
         )}
       >
@@ -187,7 +187,7 @@ export function Toast({ message, onDone }: { message: string; onDone: () => void
       {message && (
         <p
           key={message}
-          className="animate-in fade-in slide-in-from-bottom-2 rounded-full bg-primary px-4 py-2.5 text-[14px] font-medium text-primary-foreground shadow-[0_10px_30px_rgba(13,45,90,0.3)] duration-200"
+          className="animate-in fade-in slide-in-from-bottom-2 rounded-full bg-foreground/90 px-4 py-2.5 text-[15px] font-medium text-white shadow-[0_12px_30px_-8px_rgba(14,30,54,0.5)] backdrop-blur duration-200"
         >
           {message}
         </p>
@@ -232,12 +232,13 @@ export function ConfirmDialog({
         event.preventDefault();
         onCancel();
       }}
-      className="m-auto w-[min(360px,calc(100vw-2rem))] rounded-3xl bg-card p-6 text-card-foreground shadow-[0_24px_60px_rgba(13,45,90,0.3)] backdrop:bg-primary/40"
+      className="sheet mx-auto mt-auto mb-0 w-full max-w-[420px] rounded-t-[28px] bg-card px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-card-foreground shadow-[0_-20px_60px_-20px_rgba(14,30,54,0.45)] backdrop:bg-[rgba(14,30,54,0.35)] sm:mb-auto sm:max-w-[380px] sm:rounded-[28px] sm:pt-6"
     >
-      <h2 id={titleId} className="text-xl font-bold tracking-tight text-primary">
+      <div aria-hidden className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-secondary sm:hidden" />
+      <h2 id={titleId} className="font-display text-[24px] font-bold text-foreground">
         {title}
       </h2>
-      <div className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{body}</div>
+      <div className="mt-2 text-[16px] leading-relaxed text-muted-foreground">{body}</div>
       <div className="mt-6 flex flex-col gap-2">
         <Btn full onClick={onConfirm}>
           {confirmLabel}
@@ -253,16 +254,12 @@ export function ConfirmDialog({
 /** Barra fija abajo de la pantalla para la acción principal. */
 export function BottomBar({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-20 mt-auto border-t border-border/70 bg-background/95 px-7 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur">
+    <div className="material sticky bottom-0 z-20 mt-auto px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] [mask-image:none] shadow-[0_-1px_0_var(--separator)]">
       {children}
     </div>
   );
 }
 
 export function Screen({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cn("animate-in fade-in slide-in-from-right-3 duration-300", className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn("animate-in fade-in duration-200", className)}>{children}</div>;
 }

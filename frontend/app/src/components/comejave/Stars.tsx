@@ -25,8 +25,8 @@ export function Stars({ value, onChange }: { value: number; onChange: (v: number
         >
           <Star
             className={cn(
-              "h-8 w-8 transition-colors",
-              n <= active ? "fill-accent text-accent" : "text-border",
+              "h-9 w-9 transition-colors",
+              n <= active ? "fill-accent text-accent" : "text-input",
             )}
             strokeWidth={1.5}
           />

@@ -1,27 +1,49 @@
-import { useState, type InputHTMLAttributes, type ReactNode } from "react";
-import { ArrowLeft, Eye, EyeOff, ShoppingCart } from "lucide-react";
+import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { ChevronLeft, Eye, EyeOff, ShoppingBag } from "lucide-react";
 import { Field } from "@/components/comejave/ui";
 import { cn } from "@/lib/utils";
 
-export function Brand() {
+/** Botón redondo de solo ícono. `onColor` se usa sobre fondos de color. */
+export function IconButton({
+  label,
+  onClick,
+  onColor,
+  children,
+  className,
+}: {
+  label: string;
+  onClick: () => void;
+  onColor?: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="text-center">
-      <div
-        aria-hidden
-        className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-[var(--primary)] to-[#123c79] text-4xl text-white shadow-[0_12px_25px_rgba(13,45,90,0.28)]"
-      >
-        🍽️
-      </div>
-      <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-primary">
-        Come <span className="rounded-lg bg-accent px-2 py-1 text-accent-foreground">Jave</span>
-      </h1>
-      <p className="mt-3 text-[15px] text-muted-foreground">
-        Pide en Ventolini y La Frute sin hacer fila
-      </p>
-    </div>
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "pressable relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
+        onColor
+          ? "bg-white/18 text-white backdrop-blur-md hover:bg-white/28"
+          : "bg-card text-primary shadow-[0_1px_2px_rgba(14,30,54,0.08)] ring-1 ring-separator hover:bg-secondary",
+        className,
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
+export function BackButton({ onBack, onColor }: { onBack: () => void; onColor?: boolean }) {
+  return (
+    <IconButton label="Volver" onClick={onBack} {...(onColor ? { onColor } : {})}>
+      <ChevronLeft className="h-6 w-6 -translate-x-px" strokeWidth={2.25} />
+    </IconButton>
+  );
+}
+
+/** Encabezado con título grande, al estilo de las apps de iOS. */
 export function Header({
   title,
   subtitle,
@@ -29,57 +51,61 @@ export function Header({
   right,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   onBack: () => void;
   right?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4">
-      <button
-        type="button"
-        aria-label="Volver"
-        onClick={onBack}
-        className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition-colors hover:bg-accent-soft active:bg-accent-soft"
-      >
-        <ArrowLeft className="h-5 w-5" strokeWidth={2} />
-      </button>
-      <div className="min-w-0 flex-1">
-        {subtitle && <p className="text-[13px] text-muted-foreground">{subtitle}</p>}
-        <h2 className="truncate text-2xl font-bold tracking-tight text-primary">{title}</h2>
+    <header className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-3">
+        <BackButton onBack={onBack} />
+        {right}
       </div>
-      {right}
-    </div>
+      <div>
+        <h2 className="font-display text-[34px] font-bold text-foreground">{title}</h2>
+        {subtitle && <div className="mt-1.5 text-[15px] text-muted-foreground">{subtitle}</div>}
+      </div>
+    </header>
   );
 }
 
 export function CartButton({
   count,
   onClick,
-  onDark,
+  onColor,
 }: {
   count: number;
   onClick: () => void;
-  onDark?: boolean;
+  onColor?: boolean;
 }) {
+  // El contador rebota cuando aumenta, como confirmación de que el plato entró.
+  const previous = useRef(count);
+  const [bump, setBump] = useState(0);
+  useEffect(() => {
+    if (count > previous.current) setBump((n) => n + 1);
+    previous.current = count;
+  }, [count]);
+
   return (
-    <button
-      type="button"
-      aria-label={count ? `Carrito, ${count} ${count === 1 ? "plato" : "platos"}` : "Carrito vacío"}
+    <IconButton
+      label={count ? `Carrito, ${count} ${count === 1 ? "plato" : "platos"}` : "Carrito vacío"}
       onClick={onClick}
-      className={cn(
-        "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
-        onDark
-          ? "bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
-          : "bg-primary-soft text-primary hover:bg-accent-soft",
-      )}
+      {...(onColor ? { onColor } : {})}
     >
-      <ShoppingCart className="h-5 w-5" strokeWidth={2} />
+      <ShoppingBag className="h-5 w-5" strokeWidth={2} />
       {count > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-foreground">
+        <span
+          key={bump}
+          className={cn(
+            "absolute -right-1 -top-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-accent px-1.5 text-[12px] font-bold text-accent-foreground ring-2",
+            onColor ? "ring-transparent" : "ring-background",
+            bump > 0 && "bump",
+          )}
+        >
           {count}
         </span>
       )}
-    </button>
+    </IconButton>
   );
 }
 
@@ -105,7 +131,7 @@ export function PasswordField({
           onClick={() => setVisible((previous) => !previous)}
           className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
         >
-          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {visible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
       }
     />
