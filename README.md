@@ -139,7 +139,15 @@ Detalles de comportamiento:
 
 ## 10. Flujo de la app
 
-Login → Inicio → Restaurante → Categoría → Carrito → Método de pago → (Nequi: transferencia y comprobante) → Confirmar pedido → Pedido enviado → Mis pedidos.
+Login → Inicio → Restaurante (categorías en pestañas) → Carrito → Método de pago → (Nequi: transferencia y comprobante) → Confirmar pedido → Pedido enviado → Mis pedidos.
+
+### Diseño visual
+
+- **Color por restaurante:** Ventolini usa rojo tomate y La Frute verde fresco en su portada, botones del carrito, selector de cantidad y confirmación. El azul Javeriana queda para las acciones principales y el dorado para destacar.
+- **Ilustraciones propias en vez de emojis:** cada plato tiene una ilustración SVG vista desde arriba (`components/comejave/DishArt.tsx`), así que se ve igual en Android, iOS y escritorio.
+- **Tipografía:** títulos en Bricolage Grotesque (con eje óptico, incluida en el proyecto con Fontsource, sin depender de Google Fonts) y texto en la fuente del sistema. El espaciado entre letras depende del tamaño: cerrado en títulos grandes, normal en el texto.
+- **Estilo iOS:** títulos grandes, listas agrupadas sobre fondo gris claro, hojas inferiores para las confirmaciones, barras translúcidas y respuesta inmediata al presionar (los botones se encogen al tocarlos).
+- **Movimiento con propósito:** el contador del carrito rebota al agregar un plato y la confirmación del pedido aparece con un solo efecto; todo se desactiva con `prefers-reduced-motion`.
 
 ### Experiencia de usuario
 
@@ -147,7 +155,7 @@ Login → Inicio → Restaurante → Categoría → Carrito → Método de pago 
 - **Un restaurante por pedido:** si el carrito tiene platos de un restaurante y se agrega uno de otro, la app pregunta antes de vaciarlo.
 - **El carrito no se pierde al recargar:** se guarda en `sessionStorage` y se borra al cerrar la pestaña o al enviar el pedido.
 - **Botón atrás del navegador y del celular:** cada pantalla queda en el historial (`useScreenHistory`), así que "atrás" regresa a la pantalla anterior en vez de salir de la app. Después de enviar un pedido no se puede volver a la confirmación.
-- **Categorías en pestañas:** se cambia entre Pastas/Pizzas o Bowls/Ensaladas sin volver atrás, y la barra del carrito con el total queda fija abajo.
+- **Restaurante y categoría en una sola pantalla:** un control segmentado cambia entre Pastas/Pizzas o Bowls/Ensaladas sin volver atrás, y la barra del carrito con el total queda fija abajo.
 - **Pago claro:** primero se elige el método (efectivo o Nequi) y luego se continúa. En Nequi el número se copia con un toque, el campo del comprobante solo acepta dígitos y explica el error en línea.
 - **Confirmación con resumen:** antes de enviar se ven los platos, el método de pago, el comprobante y el total.
 - **Acciones con confirmación:** cancelar un pedido y cerrar sesión piden confirmación en un diálogo.
