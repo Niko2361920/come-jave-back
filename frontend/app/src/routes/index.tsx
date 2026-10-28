@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LoginScreen, SignupScreen } from "@/features/comejave/screens/auth";
 import {
   CheckoutScreen,
@@ -9,12 +9,13 @@ import {
 } from "@/features/comejave/screens/checkout";
 import { HistoryScreen, HomeScreen } from "@/features/comejave/screens/home";
 import { CategoryScreen, RestaurantScreen } from "@/features/comejave/screens/menu";
-import type { PaymentMethod, ScreenId } from "@/features/comejave/types";
+import type { PaymentMethod } from "@/features/comejave/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { useOrders } from "@/hooks/useOrders";
-import { restaurants, type Restaurant } from "@/lib/comejave-data";
-import { Screen } from "@/components/comejave/ui";
+import { useScreenHistory } from "@/hooks/useScreenHistory";
+import { restaurants, type Product, type Restaurant } from "@/lib/comejave-data";
+import { ConfirmDialog, Screen, Toast } from "@/components/comejave/ui";
 
 const DESCRIPTION =
   "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.";
@@ -22,21 +23,23 @@ const DESCRIPTION =
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Come Jave · Pide en el campus Javeriana Cali" },
+      { title: "Come Jave: pide en el campus Javeriana Cali" },
       { name: "description", content: DESCRIPTION },
-      { property: "og:title", content: "Come Jave · Pide en el campus Javeriana Cali" },
+      { property: "og:title", content: "Come Jave: pide en el campus Javeriana Cali" },
       { property: "og:description", content: DESCRIPTION },
     ],
   }),
   component: Index,
 });
 
+type PendingAdd = { restaurant: Restaurant; item: Product };
+
 function Index() {
   const auth = useAuth();
   const cart = useCart();
   const orders = useOrders(auth.user);
+  const { screen, go, replace, back } = useScreenHistory("login");
 
-  const [screen, setScreen] = useState<ScreenId>("login");
   const [restaurantId, setRestaurantId] = useState<Restaurant["id"]>("ventolini");
   const [categoryId, setCategoryId] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
@@ -44,23 +47,38 @@ function Index() {
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  // El carrito se vacía al enviar: se guarda el restaurante para la pantalla de éxito.
+  const [lastRestaurantName, setLastRestaurantName] = useState("");
   const [rating, setRating] = useState(0);
+  const [toast, setToast] = useState("");
+  const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null);
+  const clearToast = useCallback(() => setToast(""), []);
 
   // La sesión decide si se ven las pantallas de acceso o las de la app.
   const loggedIn = Boolean(auth.user);
   useEffect(() => {
-    setScreen((current) => {
-      if (loggedIn) return current === "login" || current === "signup" ? "home" : current;
-      return current === "signup" ? "signup" : "login";
-    });
+    if (loggedIn && (screen === "login" || screen === "signup")) replace("home");
+    if (!loggedIn && screen !== "login" && screen !== "signup") replace("login");
+    // Solo reacciona a cambios de sesión.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loggedIn]);
 
   const browsing = restaurants.find((r) => r.id === restaurantId) ?? restaurants[0]!;
-  const category = browsing.categories.find((c) => c.id === categoryId);
+  const category = browsing.categories.find((c) => c.id === categoryId) ?? browsing.categories[0]!;
   // El carrito es de un solo restaurante: el pedido siempre es del que tiene el carrito.
-  const orderRestaurant = restaurants.find((r) => r.id === cart.restaurantId) ?? browsing;
+  const cartRestaurant = restaurants.find((r) => r.id === cart.restaurantId);
+  const orderRestaurant = cartRestaurant ?? browsing;
 
-  const goCart = () => cart.count > 0 && setScreen("checkout");
+  const goCart = () => go("checkout");
+
+  const addToCart = (restaurant: Restaurant, item: Product) => {
+    if (cart.conflictsWith(restaurant.id)) {
+      setPendingAdd({ restaurant, item });
+      return;
+    }
+    cart.add(restaurant.id, item);
+    setToast(`${item.name} agregado`);
+  };
 
   const resetOrder = () => {
     cart.clear();
@@ -68,6 +86,7 @@ function Index() {
     setCategoryId("");
     setReference("");
     setOrderError("");
+    setMethod("Efectivo");
   };
 
   const confirmOrder = async () => {
@@ -82,13 +101,15 @@ function Index() {
         reference: reference.trim(),
       });
       setLastOrderId(id);
+      setLastRestaurantName(orderRestaurant.name);
       setRating(0);
-      setScreen("success");
+      cart.clear();
+      setReference("");
+      // El pedido ya se envió: no se debe poder volver a esta pantalla con "atrás".
+      replace("success");
     } catch (error) {
       setOrderError(
-        error instanceof Error
-          ? error.message
-          : "No pudimos registrar tu pedido. Inténtalo de nuevo.",
+        error instanceof Error ? error.message : "No se pudo enviar el pedido. Intenta de nuevo.",
       );
     } finally {
       setSubmitting(false);
@@ -102,7 +123,7 @@ function Index() {
 
   const signOut = async () => {
     resetOrder();
-    setScreen("login");
+    replace("login");
     await auth.signOut();
   };
 
@@ -110,7 +131,9 @@ function Index() {
     if (!auth.ready) {
       return (
         <Screen className="flex flex-1 items-center justify-center">
-          <p className="text-[15px] text-muted-foreground">Cargando…</p>
+          <p role="status" className="text-[15px] text-muted-foreground">
+            Cargando…
+          </p>
         </Screen>
       );
     }
@@ -121,29 +144,34 @@ function Index() {
           auth={auth}
           onBack={() => {
             auth.clearMessages();
-            setScreen("login");
+            back("login");
           }}
-          onCreated={() => setScreen("login")}
+          onCreated={() => replace("login")}
         />
       ) : (
         <LoginScreen
           auth={auth}
           onSignup={() => {
             auth.clearMessages();
-            setScreen("signup");
+            go("signup");
           }}
         />
       );
     }
 
-    switch (screen) {
+    // Si el carrito quedó vacío (por ejemplo, al volver atrás), el pago no tiene sentido.
+    const paying = screen === "online" || screen === "waiting";
+    const current = paying && cart.count === 0 ? "checkout" : screen;
+
+    switch (current) {
       case "history":
         return (
           <HistoryScreen
             orders={orders.history}
             loading={orders.loading}
             loadError={orders.loadError}
-            onBack={() => setScreen("home")}
+            onBack={() => back("home")}
+            onBrowse={() => replace("home")}
             {...(orders.remote ? { onCancel: orders.cancel } : {})}
           />
         );
@@ -152,38 +180,46 @@ function Index() {
           <RestaurantScreen
             restaurant={browsing}
             cartCount={cart.count}
-            onBack={() => setScreen("home")}
+            cartTotal={cart.total}
+            onBack={() => back("home")}
             onCart={goCart}
             onPick={(id) => {
               setCategoryId(id);
-              setScreen("category");
+              go("category");
             }}
           />
         );
       case "category":
-        if (!category) return null;
         return (
           <CategoryScreen
             restaurant={browsing}
             category={category}
             cartCount={cart.count}
             cartTotal={cart.total}
-            onBack={() => setScreen("restaurant")}
+            qtyOf={cart.qtyOf}
+            onBack={() => back("restaurant")}
             onCart={goCart}
-            onAdd={(item) => cart.add(browsing.id, item)}
+            onCategory={setCategoryId}
+            onAdd={(item) => addToCart(browsing, item)}
+            onDecrement={cart.decrement}
           />
         );
       case "checkout":
         return (
           <CheckoutScreen
+            restaurantName={orderRestaurant.name}
             lines={cart.lines}
             total={cart.total}
-            onBack={() => setScreen(cart.restaurantId ? "restaurant" : "home")}
-            onPay={(chosen) => {
+            method={method}
+            onMethod={(chosen) => {
               setMethod(chosen);
               setOrderError("");
-              setScreen(chosen === "Nequi" ? "online" : "waiting");
             }}
+            onIncrement={(line) => cart.add(orderRestaurant.id, line)}
+            onDecrement={cart.decrement}
+            onBack={() => back("home")}
+            onBrowse={() => replace("home")}
+            onContinue={() => go(method === "Nequi" ? "online" : "waiting")}
           />
         );
       case "online":
@@ -193,34 +229,38 @@ function Index() {
             reference={reference}
             referenceRequired={orders.remote}
             onReference={setReference}
-            onBack={() => setScreen("checkout")}
-            onNext={() => setScreen("waiting")}
+            onBack={() => back("checkout")}
+            onNext={() => go("waiting")}
           />
         );
       case "waiting":
         return (
           <WaitingScreen
             restaurantName={orderRestaurant.name}
+            lines={cart.lines}
+            total={cart.total}
+            method={method}
+            reference={reference.trim()}
             submitting={submitting}
             error={orderError}
             onConfirm={() => void confirmOrder()}
-            onBack={() => setScreen(method === "Nequi" ? "online" : "checkout")}
+            onBack={() => back("checkout")}
           />
         );
       case "success":
         return (
           <SuccessScreen
-            restaurantName={orderRestaurant.name}
+            restaurantName={lastRestaurantName || orderRestaurant.name}
             remote={orders.remote}
             rating={rating}
             onRate={rate}
             onHome={() => {
               resetOrder();
-              setScreen("home");
+              replace("home");
             }}
             onHistory={() => {
               resetOrder();
-              setScreen("history");
+              replace("history");
             }}
           />
         );
@@ -229,12 +269,14 @@ function Index() {
           <HomeScreen
             user={auth.user}
             cartCount={cart.count}
+            cartTotal={cart.total}
+            {...(cartRestaurant ? { cartRestaurant } : {})}
             historyCount={orders.history.length}
             onCart={goCart}
-            onHistory={() => setScreen("history")}
+            onHistory={() => go("history")}
             onPick={(id) => {
               setRestaurantId(id);
-              setScreen("restaurant");
+              go("restaurant");
             }}
             onSignOut={() => void signOut()}
           />
@@ -243,10 +285,31 @@ function Index() {
   };
 
   return (
-    <main className="flex min-h-screen justify-center bg-surface px-3 py-4 sm:px-4 sm:py-10">
-      <div className="flex min-h-screen w-full max-w-[420px] flex-col overflow-y-auto bg-background/95 shadow-[0_18px_60px_rgba(13,45,90,0.12)] ring-1 ring-[#dfe6f3] sm:h-[860px] sm:min-h-0 sm:rounded-[2rem] sm:border sm:border-border">
+    <main className="flex min-h-dvh justify-center bg-surface sm:px-4 sm:py-10">
+      <div className="relative flex min-h-dvh w-full max-w-[420px] flex-col overflow-y-auto bg-background shadow-[0_18px_60px_rgba(13,45,90,0.12)] sm:h-[860px] sm:min-h-0 sm:rounded-[2rem] sm:border sm:border-border">
         {renderScreen()}
+        <Toast message={toast} onDone={clearToast} />
       </div>
+      <ConfirmDialog
+        open={pendingAdd !== null}
+        title="¿Empezar un pedido nuevo?"
+        body={
+          pendingAdd && cartRestaurant
+            ? `Tu carrito tiene platos de ${cartRestaurant.name}. Cada pedido es de un solo restaurante: si agregas ${pendingAdd.item.name}, se vacía el carrito actual.`
+            : ""
+        }
+        confirmLabel="Vaciar y agregar"
+        cancelLabel="Mantener mi carrito"
+        onConfirm={() => {
+          if (pendingAdd) {
+            cart.clear();
+            cart.add(pendingAdd.restaurant.id, pendingAdd.item);
+            setToast(`${pendingAdd.item.name} agregado`);
+          }
+          setPendingAdd(null);
+        }}
+        onCancel={() => setPendingAdd(null)}
+      />
     </main>
   );
 }
