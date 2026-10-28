@@ -6,13 +6,18 @@ import { cn } from "@/lib/utils";
 export function Brand() {
   return (
     <div className="text-center">
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-[var(--primary)] to-[#123c79] text-4xl text-white shadow-[0_12px_25px_rgba(13,45,90,0.28)]">
+      <div
+        aria-hidden
+        className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-[var(--primary)] to-[#123c79] text-4xl text-white shadow-[0_12px_25px_rgba(13,45,90,0.28)]"
+      >
         🍽️
       </div>
       <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-primary">
         Come <span className="rounded-lg bg-accent px-2 py-1 text-accent-foreground">Jave</span>
       </h1>
-      <p className="mt-3 text-[15px] text-muted-foreground">Pide sin filas en el campus</p>
+      <p className="mt-3 text-[15px] text-muted-foreground">
+        Pide en Ventolini y La Frute sin hacer fila
+      </p>
     </div>
   );
 }
@@ -34,13 +39,13 @@ export function Header({
         type="button"
         aria-label="Volver"
         onClick={onBack}
-        className="-ml-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-primary transition-colors hover:bg-accent-soft active:bg-accent-soft"
+        className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition-colors hover:bg-accent-soft active:bg-accent-soft"
       >
         <ArrowLeft className="h-5 w-5" strokeWidth={2} />
       </button>
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         {subtitle && <p className="text-[13px] text-muted-foreground">{subtitle}</p>}
-        <h2 className="text-2xl font-bold tracking-tight text-primary">{title}</h2>
+        <h2 className="truncate text-2xl font-bold tracking-tight text-primary">{title}</h2>
       </div>
       {right}
     </div>
@@ -59,7 +64,7 @@ export function CartButton({
   return (
     <button
       type="button"
-      aria-label={`Carrito, ${count} ítems`}
+      aria-label={count ? `Carrito, ${count} ${count === 1 ? "plato" : "platos"}` : "Carrito vacío"}
       onClick={onClick}
       className={cn(
         "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
@@ -82,7 +87,10 @@ export function CartButton({
 export function PasswordField({
   label = "Contraseña",
   ...props
-}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { label?: string }) {
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+  label?: string;
+  hint?: string | undefined;
+}) {
   const [visible, setVisible] = useState(false);
   return (
     <Field
@@ -95,7 +103,7 @@ export function PasswordField({
           type="button"
           aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
           onClick={() => setVisible((previous) => !previous)}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

@@ -94,7 +94,7 @@
   --destructive: #d64b44;
   --destructive-foreground: #fffaf3;
   --border: #dae3f0;
-  --input: #edf1f7;
+  --input: #c8d3e4;
   --ring: #0d2d5a;
   --chart-1: #0d2d5a;
   --chart-2: #d7ad37;
@@ -163,5 +163,32 @@
     font-family: "Poppins", "Segoe UI", sans-serif;
     letter-spacing: -0.02em;
     min-height: 100vh;
+  }
+}
+
+@layer base {
+  /* Foco visible solo con teclado, en todos los controles. */
+  :where(button, a, input, select, textarea, [role="tab"]):focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  dialog::backdrop {
+    backdrop-filter: blur(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
