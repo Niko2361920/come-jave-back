@@ -1,32 +1,68 @@
-import { useState } from "react";
-import { Banknote, Check, Copy, ShoppingBag, Smartphone } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Banknote, Check, Copy, Smartphone } from "lucide-react";
 import { BottomBar, Btn, Field, Notice, QtyStepper, Screen } from "@/components/comejave/ui";
 import { Header } from "@/components/comejave/layout";
+import { CategoryArt, DishArt } from "@/components/comejave/DishArt";
 import { Stars } from "@/components/comejave/Stars";
+import { restaurantStyle } from "@/components/comejave/theme";
 import type { CartLine, PaymentMethod } from "@/features/comejave/types";
 import { isValidReference } from "@/features/comejave/validation";
-import { formatCOP } from "@/lib/comejave-data";
+import { formatCOP, type Restaurant } from "@/lib/comejave-data";
 import { cn } from "@/lib/utils";
 
 const NEQUI_NUMBER = "318 452 9017";
 
-const METHODS: { id: PaymentMethod; title: string; detail: string; Icon: typeof Banknote }[] = [
+const METHODS: {
+  id: PaymentMethod;
+  title: string;
+  detail: string;
+  Icon: typeof Banknote;
+  tile: string;
+}[] = [
   {
     id: "Efectivo",
     title: "Efectivo",
     detail: "Pagas al reclamar en el punto",
     Icon: Banknote,
+    tile: "bg-frute",
   },
   {
     id: "Nequi",
     title: "Nequi",
     detail: "Transfieres ahora y registras el comprobante",
     Icon: Smartphone,
+    tile: "bg-[#c4006f]",
   },
 ];
 
+/** Grupo con título, al estilo de las listas agrupadas de iOS. */
+function Group({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <section>
+      {title && (
+        <h3 className="mb-2 px-4 text-[15px] font-semibold text-muted-foreground">{title}</h3>
+      )}
+      <div className="divide-y divide-separator overflow-hidden rounded-[22px] bg-card ring-1 ring-separator">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function RestaurantChip({ restaurant }: { restaurant: Restaurant }) {
+  return (
+    <span
+      style={restaurantStyle(restaurant.id)}
+      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--r-soft)] px-3 py-1 text-[14px] font-semibold text-[var(--r)]"
+    >
+      <span aria-hidden className="h-2 w-2 rounded-full bg-[var(--r)]" />
+      {restaurant.name}
+    </span>
+  );
+}
+
 export function CheckoutScreen({
-  restaurantName,
+  restaurant,
   lines,
   total,
   method,
@@ -37,7 +73,7 @@ export function CheckoutScreen({
   onBrowse,
   onContinue,
 }: {
-  restaurantName: string;
+  restaurant: Restaurant;
   lines: CartLine[];
   total: number;
   method: PaymentMethod;
@@ -50,15 +86,24 @@ export function CheckoutScreen({
 }) {
   if (lines.length === 0) {
     return (
-      <Screen className="flex flex-1 flex-col gap-7 px-7 py-10">
+      <Screen className="flex flex-1 flex-col gap-7 px-5 pt-6 pb-10">
         <Header title="Tu pedido" onBack={onBack} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-soft">
-            <ShoppingBag className="h-9 w-9 text-primary" strokeWidth={1.75} />
-          </span>
-          <p className="text-lg font-bold text-primary">Tu carrito está vacío</p>
-          <p className="text-[15px] text-muted-foreground">Elige un restaurante y agrega platos.</p>
-          <Btn variant="accent" onClick={onBrowse} className="mt-2">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+          <div aria-hidden className="relative mb-2 h-28 w-40">
+            <CategoryArt
+              categoryId="pastas"
+              className="absolute left-0 top-2 h-24 w-24 -rotate-12"
+            />
+            <CategoryArt
+              categoryId="ensaladas"
+              className="absolute right-0 top-0 h-24 w-24 rotate-12"
+            />
+          </div>
+          <p className="font-display text-[24px] font-bold text-foreground">
+            Tu carrito está vacío
+          </p>
+          <p className="text-[16px] text-muted-foreground">Elige un restaurante y agrega platos.</p>
+          <Btn onClick={onBrowse} className="mt-3">
             Ver restaurantes
           </Btn>
         </div>
@@ -68,20 +113,21 @@ export function CheckoutScreen({
 
   return (
     <Screen className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-7 px-7 pt-10 pb-8">
-        <Header title="Tu pedido" subtitle={restaurantName} onBack={onBack} />
-        <ul className="flex flex-col gap-3">
+      <div style={restaurantStyle(restaurant.id)} className="flex flex-col gap-7 px-5 pt-6 pb-8">
+        <Header
+          title="Tu pedido"
+          subtitle={<RestaurantChip restaurant={restaurant} />}
+          onBack={onBack}
+        />
+        <Group>
           {lines.map((line) => (
-            <li
-              key={line.id}
-              className="flex items-center gap-3 rounded-2xl bg-primary-soft/70 px-4 py-3"
-            >
-              <span className="text-2xl" aria-hidden>
-                {line.emoji}
+            <div key={line.id} className="flex items-center gap-3 py-3 pr-3 pl-3">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--r-soft)] p-1">
+                <DishArt itemId={line.id} className="h-full w-full" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold text-foreground">{line.name}</p>
-                <p className="text-[13px] text-muted-foreground">
+                <p className="truncate text-[17px] font-semibold text-foreground">{line.name}</p>
+                <p className="text-[15px] text-muted-foreground tabular-nums">
                   {formatCOP(line.price * line.qty)}
                 </p>
               </div>
@@ -92,60 +138,66 @@ export function CheckoutScreen({
                 onIncrement={() => onIncrement(line)}
                 onDecrement={() => onDecrement(line.id)}
               />
-            </li>
+            </div>
           ))}
-        </ul>
+        </Group>
 
-        <fieldset className="flex flex-col gap-3">
-          <legend className="mb-3 text-[15px] font-bold text-primary">¿Cómo vas a pagar?</legend>
-          {METHODS.map(({ id, title, detail, Icon }) => {
-            const selected = method === id;
-            return (
-              <label
-                key={id}
-                className={cn(
-                  "flex cursor-pointer items-center gap-4 rounded-2xl border-2 px-4 py-3.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                  selected
-                    ? "border-primary bg-primary-soft"
-                    : "border-border bg-background hover:bg-secondary",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value={id}
-                  checked={selected}
-                  onChange={() => onMethod(id)}
-                  className="sr-only"
-                />
-                <Icon className="h-6 w-6 shrink-0 text-primary" strokeWidth={1.75} />
-                <span className="flex-1">
-                  <span className="block text-[15px] font-bold text-primary">{title}</span>
-                  <span className="block text-[13px] text-muted-foreground">{detail}</span>
-                </span>
-                <span
-                  aria-hidden
-                  className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-full border-2",
-                    selected ? "border-primary bg-primary" : "border-border",
-                  )}
+        <fieldset>
+          <legend className="mb-2 px-4 text-[15px] font-semibold text-muted-foreground">
+            Método de pago
+          </legend>
+          <div className="divide-y divide-separator overflow-hidden rounded-[22px] bg-card ring-1 ring-separator">
+            {METHODS.map(({ id, title, detail, Icon, tile }) => {
+              const selected = method === id;
+              return (
+                <label
+                  key={id}
+                  className="flex min-h-[4.25rem] items-center gap-3.5 px-4 py-3 transition-colors hover:bg-muted/60 has-[:focus-visible]:bg-muted"
                 >
-                  {selected && (
-                    <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
-                  )}
-                </span>
-              </label>
-            );
-          })}
+                  <input
+                    type="radio"
+                    name="payment-method"
+                    value={id}
+                    checked={selected}
+                    onChange={() => onMethod(id)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white",
+                      tile,
+                    )}
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[17px] font-semibold text-foreground">{title}</span>
+                    <span className="block text-[14px] text-muted-foreground">{detail}</span>
+                  </span>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+                      selected ? "bg-primary" : "ring-2 ring-inset ring-input",
+                    )}
+                  >
+                    {selected && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </fieldset>
       </div>
       <BottomBar>
-        <div className="mb-3 flex items-baseline justify-between">
-          <span className="text-[15px] text-muted-foreground">Total</span>
-          <span className="text-2xl font-bold text-primary">{formatCOP(total)}</span>
+        <div className="mb-3 flex items-baseline justify-between px-1">
+          <span className="text-[16px] text-muted-foreground">Total</span>
+          <span className="font-display text-[30px] font-bold text-foreground tabular-nums">
+            {formatCOP(total)}
+          </span>
         </div>
         <Btn full onClick={onContinue}>
-          {method === "Nequi" ? "Continuar al pago con Nequi" : "Revisar pedido"}
+          {method === "Nequi" ? "Pagar con Nequi" : "Revisar pedido"}
         </Btn>
       </BottomBar>
     </Screen>
@@ -185,39 +237,47 @@ export function OnlinePaymentScreen({
 
   return (
     <Screen className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-7 px-7 pt-10 pb-8">
-        <Header title="Pago con Nequi" onBack={onBack} />
-        <ol className="flex flex-col gap-5">
-          <li className="rounded-3xl bg-primary p-6 text-primary-foreground">
-            <p className="text-[13px] text-primary-foreground/75">
-              1. Transfiere a esta cuenta Nequi
+      <div className="flex flex-col gap-7 px-5 pt-6 pb-8">
+        <Header title="Pago con Nequi" subtitle="Dos pasos y listo." onBack={onBack} />
+        <ol className="flex flex-col gap-6">
+          <li className="relative overflow-hidden rounded-[28px] bg-[#210049] p-6 text-white shadow-[0_24px_40px_-24px_#210049]">
+            <span
+              aria-hidden
+              className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-[#c4006f]/60 blur-2xl"
+            />
+            <p className="relative text-[15px] text-white/75">1. Transfiere a esta cuenta</p>
+            <p className="font-display relative mt-2 text-[32px] font-bold tracking-[-0.02em] tabular-nums">
+              {NEQUI_NUMBER}
             </p>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <p className="text-2xl font-bold tracking-tight tabular-nums">{NEQUI_NUMBER}</p>
+            <p className="relative text-[15px] text-white/75">Come Jave, Javeriana Cali</p>
+            <div className="relative mt-6 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[13px] text-white/65">Monto exacto</p>
+                <p className="text-[24px] font-bold tabular-nums">{formatCOP(total)}</p>
+              </div>
               <button
                 type="button"
                 onClick={() => void copy()}
-                className="flex min-h-10 items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 text-[13px] font-semibold transition-colors hover:bg-primary-foreground/25"
+                className="pressable flex min-h-11 items-center gap-1.5 rounded-full bg-white px-4 text-[15px] font-semibold text-[#210049]"
               >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copiado" : "Copiar"}
+                {copied ? (
+                  <Check className="h-4 w-4" strokeWidth={3} />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                {copied ? "Copiado" : "Copiar número"}
               </button>
-            </div>
-            <p className="mt-1 text-[14px] text-primary-foreground/80">Come Jave, Javeriana Cali</p>
-            <div className="mt-5 flex items-baseline justify-between border-t border-primary-foreground/20 pt-4">
-              <span className="text-[13px] text-primary-foreground/75">Monto exacto</span>
-              <span className="text-xl font-bold text-accent">{formatCOP(total)}</span>
             </div>
           </li>
           <li>
             <Field
-              label="2. Escribe el número de comprobante"
+              label="2. Número de comprobante"
               placeholder="Ej. 987654321"
               inputMode="numeric"
               autoComplete="off"
               maxLength={20}
               value={reference}
-              hint="Lo encuentras en el detalle del movimiento en Nequi (6 a 20 dígitos)."
+              hint="Está en el detalle del movimiento en Nequi (6 a 20 dígitos)."
               error={showError ? "Usa solo números, entre 6 y 20 dígitos." : undefined}
               onChange={(event) => onReference(event.target.value.replace(/\D/g, ""))}
             />
@@ -234,7 +294,7 @@ export function OnlinePaymentScreen({
 }
 
 export function WaitingScreen({
-  restaurantName,
+  restaurant,
   lines,
   total,
   method,
@@ -244,7 +304,7 @@ export function WaitingScreen({
   onConfirm,
   onBack,
 }: {
-  restaurantName: string;
+  restaurant: Restaurant;
   lines: CartLine[];
   total: number;
   method: PaymentMethod;
@@ -254,41 +314,53 @@ export function WaitingScreen({
   onConfirm: () => void;
   onBack: () => void;
 }) {
-  const count = lines.reduce((sum, line) => sum + line.qty, 0);
   return (
     <Screen className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-6 px-7 pt-10 pb-8">
-        <Header title="Confirma tu pedido" subtitle={restaurantName} onBack={onBack} />
-        <dl className="divide-y divide-border rounded-3xl bg-primary-soft/70 px-5 ring-1 ring-primary/10">
-          <div className="py-4">
-            <dt className="text-[13px] text-muted-foreground">
-              {count} {count === 1 ? "plato" : "platos"}
-            </dt>
-            <dd className="mt-1 text-[15px] text-foreground">
-              {lines.map((line) => `${line.qty}× ${line.name}`).join(", ")}
-            </dd>
-          </div>
-          <div className="flex items-center justify-between py-4">
-            <dt className="text-[13px] text-muted-foreground">Pago</dt>
-            <dd className="text-[15px] font-semibold text-foreground">
+      <div style={restaurantStyle(restaurant.id)} className="flex flex-col gap-6 px-5 pt-6 pb-8">
+        <Header
+          title="Confirma tu pedido"
+          subtitle={<RestaurantChip restaurant={restaurant} />}
+          onBack={onBack}
+        />
+        <Group>
+          {lines.map((line) => (
+            <div key={line.id} className="flex items-center gap-3 px-4 py-3">
+              <DishArt itemId={line.id} className="h-10 w-10 shrink-0" />
+              <span className="flex-1 text-[17px] text-foreground">
+                <span className="font-semibold tabular-nums">{line.qty}×</span> {line.name}
+              </span>
+              <span className="text-[16px] text-muted-foreground tabular-nums">
+                {formatCOP(line.price * line.qty)}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <span className="text-[16px] text-muted-foreground">Pago</span>
+            <span className="text-right text-[16px] font-semibold text-foreground">
               {method}
-              {method === "Nequi" && reference ? `, comprobante ${reference}` : ""}
-            </dd>
+              {method === "Nequi" && reference && (
+                <span className="block text-[14px] font-normal text-muted-foreground tabular-nums">
+                  Comprobante {reference}
+                </span>
+              )}
+            </span>
           </div>
-          <div className="flex items-baseline justify-between py-4">
-            <dt className="text-[13px] text-muted-foreground">Total</dt>
-            <dd className="text-2xl font-bold text-primary">{formatCOP(total)}</dd>
+          <div className="flex items-baseline justify-between px-4 py-3.5">
+            <span className="text-[16px] text-muted-foreground">Total</span>
+            <span className="font-display text-[28px] font-bold text-foreground tabular-nums">
+              {formatCOP(total)}
+            </span>
           </div>
-        </dl>
-        <p className="text-[14px] leading-relaxed text-muted-foreground">
+        </Group>
+        <p className="px-1 text-[15px] leading-relaxed text-muted-foreground">
           {method === "Efectivo"
-            ? `Pagas en el punto de ${restaurantName} al reclamar. El pedido estará listo en unos 15 minutos.`
-            : `${restaurantName} verifica tu transferencia y prepara el pedido en unos 15 minutos.`}
+            ? `Pagas en el punto de ${restaurant.name} al reclamar. Estará listo en unos 15 minutos.`
+            : `${restaurant.name} verifica tu transferencia y lo prepara en unos 15 minutos.`}
         </p>
         {error && <Notice>{error}</Notice>}
       </div>
       <BottomBar>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           <Btn full onClick={onConfirm} disabled={submitting} aria-busy={submitting}>
             {submitting ? "Enviando pedido…" : error ? "Intentar de nuevo" : "Enviar pedido"}
           </Btn>
@@ -302,14 +374,14 @@ export function WaitingScreen({
 }
 
 export function SuccessScreen({
-  restaurantName,
+  restaurant,
   remote,
   rating,
   onRate,
   onHome,
   onHistory,
 }: {
-  restaurantName: string;
+  restaurant: Restaurant;
   /** true cuando el pedido quedó registrado en la API (queda pendiente de pago). */
   remote: boolean;
   rating: number;
@@ -318,34 +390,41 @@ export function SuccessScreen({
   onHistory: () => void;
 }) {
   return (
-    <Screen className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-16 text-center">
-      <span className="flex h-24 w-24 items-center justify-center rounded-full bg-primary">
-        <Check className="h-11 w-11 text-accent" strokeWidth={2.5} />
-      </span>
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-primary">
-          {remote ? "Pedido enviado" : "Pedido confirmado"}
-        </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-          {remote
-            ? `${restaurantName} lo marcará como pagado al confirmar tu pago. Puedes seguir su estado en el historial.`
-            : `Reclámalo en el punto de ${restaurantName} en unos 15 minutos.`}
-        </p>
+    <Screen className="flex flex-1 flex-col">
+      <div
+        style={restaurantStyle(restaurant.id)}
+        className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-14 text-center"
+      >
+        <span className="pop flex h-28 w-28 items-center justify-center rounded-full bg-[var(--r)] shadow-[0_20px_40px_-16px_var(--r)]">
+          <Check className="h-14 w-14 text-white" strokeWidth={3} />
+        </span>
+        <div>
+          <h2 className="font-display text-[34px] font-extrabold text-foreground">
+            {remote ? "Pedido enviado" : "¡Listo, pedido hecho!"}
+          </h2>
+          <p className="mx-auto mt-3 max-w-[18rem] text-[17px] leading-relaxed text-muted-foreground">
+            {remote
+              ? `${restaurant.name} lo marcará como pagado al confirmar tu pago.`
+              : `Reclámalo en el punto de ${restaurant.name} en unos 15 minutos.`}
+          </p>
+        </div>
+        <div className="w-full rounded-[22px] bg-card px-5 py-5 ring-1 ring-separator">
+          <p className="mb-3 text-[16px] font-semibold text-foreground">
+            {rating ? "Gracias por calificar" : "¿Cómo te fue pidiendo?"}
+          </p>
+          <Stars value={rating} onChange={onRate} />
+        </div>
       </div>
-      <div className="mt-2 w-full rounded-3xl bg-accent-soft px-5 py-6">
-        <p className="mb-4 text-[14px] font-medium text-accent-foreground">
-          {rating ? "Gracias por calificar" : "¿Cómo te fue pidiendo?"}
-        </p>
-        <Stars value={rating} onChange={onRate} />
-      </div>
-      <div className="flex w-full flex-col gap-3">
-        <Btn full onClick={onHistory}>
-          Ver estado del pedido
-        </Btn>
-        <Btn full variant="outline" onClick={onHome}>
-          Volver al inicio
-        </Btn>
-      </div>
+      <BottomBar>
+        <div className="flex flex-col gap-1">
+          <Btn full onClick={onHistory}>
+            Ver estado del pedido
+          </Btn>
+          <Btn full variant="ghost" onClick={onHome}>
+            Volver al inicio
+          </Btn>
+        </div>
+      </BottomBar>
     </Screen>
   );
 }

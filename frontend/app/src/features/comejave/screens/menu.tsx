@@ -1,84 +1,87 @@
 import { ChevronRight, Plus, ShoppingBag } from "lucide-react";
 import { BottomBar, Btn, QtyStepper, Screen } from "@/components/comejave/ui";
-import { CartButton, Header } from "@/components/comejave/layout";
+import { BackButton, CartButton } from "@/components/comejave/layout";
+import { CategoryArt, DishArt } from "@/components/comejave/DishArt";
+import { restaurantStyle } from "@/components/comejave/theme";
 import { formatCOP, type Category, type Product, type Restaurant } from "@/lib/comejave-data";
 import { cn } from "@/lib/utils";
-
-const cheapest = (category: Category) => Math.min(...category.items.map((item) => item.price));
 
 function CartBar({ count, total, onCart }: { count: number; total: number; onCart: () => void }) {
   if (count === 0) return null;
   return (
     <BottomBar>
-      <Btn full onClick={onCart} className="justify-between">
-        <span className="flex items-center gap-2">
-          <ShoppingBag className="h-5 w-5" strokeWidth={2} />
-          Ver carrito ({count})
+      <Btn
+        full
+        onClick={onCart}
+        className="justify-between bg-[var(--r)] hover:bg-[var(--r)] hover:brightness-110"
+      >
+        <span className="flex items-center gap-2.5">
+          <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-white/20 px-2 text-[15px] tabular-nums">
+            {count}
+          </span>
+          Ver carrito
         </span>
-        <span className="font-bold">{formatCOP(total)}</span>
+        <span className="flex items-center gap-1 tabular-nums">
+          {formatCOP(total)}
+          <ShoppingBag className="h-5 w-5" strokeWidth={2} />
+        </span>
       </Btn>
     </BottomBar>
   );
 }
 
-export function RestaurantScreen({
-  restaurant,
-  cartCount,
-  cartTotal,
-  onBack,
-  onCart,
-  onPick,
+function ProductRow({
+  item,
+  qty,
+  onAdd,
+  onDecrement,
 }: {
-  restaurant: Restaurant;
-  cartCount: number;
-  cartTotal: number;
-  onBack: () => void;
-  onCart: () => void;
-  onPick: (categoryId: string) => void;
+  item: Product;
+  qty: number;
+  onAdd: () => void;
+  onDecrement: () => void;
 }) {
   return (
-    <Screen className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-7 px-7 py-10">
-        <Header
-          title={`${restaurant.emoji} ${restaurant.name}`}
-          subtitle={restaurant.tagline}
-          onBack={onBack}
-          right={<CartButton count={cartCount} onClick={onCart} />}
-        />
-        <ul className="flex flex-col gap-3">
-          {restaurant.categories.map((c) => (
-            <li key={c.id}>
-              <button
-                type="button"
-                onClick={() => onPick(c.id)}
-                className={cn(
-                  "flex w-full items-center gap-4 rounded-3xl p-5 text-left transition-colors",
-                  restaurant.accent === "accent"
-                    ? "bg-accent-soft ring-1 ring-accent/50 hover:bg-accent/40"
-                    : "bg-primary-soft ring-1 ring-primary/15 hover:bg-primary-soft/60",
-                )}
-              >
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background text-3xl">
-                  {c.emoji}
-                </span>
-                <span className="flex-1">
-                  <span className="block text-lg font-bold text-primary">{c.name}</span>
-                  <span className="block text-[13px] text-muted-foreground">
-                    {c.items.length} opciones, desde {formatCOP(cheapest(c))}
-                  </span>
-                </span>
-                <ChevronRight className="h-5 w-5 text-primary/50" strokeWidth={2} />
-              </button>
-            </li>
-          ))}
-        </ul>
+    <li className="flex items-center gap-4 py-4 pr-4 pl-3">
+      <span
+        className={cn(
+          "flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-[20px] p-1.5 transition-colors",
+          qty > 0 ? "bg-[var(--r-soft)]" : "bg-muted",
+        )}
+      >
+        <DishArt itemId={item.id} className="h-full w-full" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[17px] leading-tight font-semibold text-foreground">{item.name}</p>
+        <p className="mt-0.5 text-[14px] leading-snug text-muted-foreground">{item.desc}</p>
+        <p className="mt-1.5 text-[16px] font-bold text-foreground tabular-nums">
+          {formatCOP(item.price)}
+        </p>
       </div>
-      <CartBar count={cartCount} total={cartTotal} onCart={onCart} />
-    </Screen>
+      {qty > 0 ? (
+        <QtyStepper
+          size="sm"
+          qty={qty}
+          name={item.name}
+          onIncrement={onAdd}
+          onDecrement={onDecrement}
+        />
+      ) : (
+        <button
+          type="button"
+          aria-label={`Agregar ${item.name}`}
+          onClick={onAdd}
+          className="pressable flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--r-soft)] text-[var(--r)] transition-colors hover:bg-[var(--r)] hover:text-white"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2.75} />
+        </button>
+      )}
+    </li>
   );
 }
 
-export function CategoryScreen({
+/** Restaurante con sus categorías en un control segmentado y la lista de platos. */
+export function RestaurantScreen({
   restaurant,
   category,
   cartCount,
@@ -104,81 +107,90 @@ export function CategoryScreen({
 }) {
   return (
     <Screen className="flex flex-1 flex-col">
-      <div className="flex flex-col gap-6 px-7 pt-10 pb-8">
-        <Header
-          title={restaurant.name}
-          subtitle={restaurant.tagline}
-          onBack={onBack}
-          right={<CartButton count={cartCount} onClick={onCart} />}
-        />
-        <div role="tablist" aria-label="Categorías" className="flex gap-2">
-          {restaurant.categories.map((c) => {
-            const selected = c.id === category.id;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => onCategory(c.id)}
-                className={cn(
-                  "flex min-h-11 items-center gap-2 rounded-full px-4 text-[15px] font-semibold transition-colors",
-                  selected
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-primary-soft text-primary hover:bg-accent-soft",
-                )}
-              >
-                <span aria-hidden>{c.emoji}</span>
-                {c.name}
-              </button>
-            );
-          })}
+      <div style={restaurantStyle(restaurant.id)} className="flex flex-1 flex-col">
+        <div className="relative isolate overflow-hidden bg-[var(--r)] px-5 pt-6 pb-16 text-white">
+          <div className="relative z-10 flex items-center justify-between">
+            <BackButton onBack={onBack} onColor />
+            <CartButton count={cartCount} onClick={onCart} onColor />
+          </div>
+          <h2 className="font-display relative z-10 mt-10 text-[44px] font-extrabold tracking-[-0.04em]">
+            {restaurant.name}
+          </h2>
+          <p className="relative z-10 mt-1 text-[17px] text-white/85">{restaurant.tagline}</p>
+          <CategoryArt
+            key={category.id}
+            categoryId={category.id}
+            className="pop absolute -right-12 -bottom-16 -z-0 h-56 w-56 rotate-[-12deg] drop-shadow-[0_20px_30px_rgba(0,0,0,0.3)]"
+          />
         </div>
-        <ul className="flex flex-col gap-3" role="tabpanel" aria-label={category.name}>
-          {category.items.map((item) => {
-            const qty = qtyOf(item.id);
-            return (
-              <li
+
+        <div className="sticky top-0 z-20 -mt-8 rounded-t-[28px] bg-background px-5 pt-5 pb-3">
+          <div
+            role="tablist"
+            aria-label="Categorías"
+            className="grid grid-cols-2 gap-1 rounded-2xl bg-[#e3e6ee] p-1"
+          >
+            {restaurant.categories.map((c) => {
+              const selected = c.id === category.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => onCategory(c.id)}
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl text-[16px] font-semibold transition-all duration-200",
+                    selected
+                      ? "bg-card text-foreground shadow-[0_2px_8px_-2px_rgba(14,30,54,0.2)]"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <CategoryArt categoryId={c.id} className="h-6 w-6" />
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex-1 bg-background px-5 pb-8">
+          <ul
+            role="tabpanel"
+            aria-label={category.name}
+            className="divide-y divide-separator overflow-hidden rounded-[22px] bg-card ring-1 ring-separator"
+          >
+            {category.items.map((item) => (
+              <ProductRow
                 key={item.id}
-                className={cn(
-                  "flex items-center gap-4 rounded-2xl p-4 ring-1 transition-colors",
-                  qty > 0
-                    ? "bg-accent-soft/60 ring-accent/60"
-                    : "bg-primary-soft/70 ring-primary/10",
-                )}
-              >
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-background text-2xl">
-                  {item.emoji}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-bold text-foreground">{item.name}</p>
-                  <p className="mt-0.5 text-[13px] text-muted-foreground">{item.desc}</p>
-                  <p className="mt-1 text-[15px] font-bold text-primary">{formatCOP(item.price)}</p>
-                </div>
-                {qty > 0 ? (
-                  <QtyStepper
-                    size="sm"
-                    qty={qty}
-                    name={item.name}
-                    onIncrement={() => onAdd(item)}
-                    onDecrement={() => onDecrement(item.id)}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    aria-label={`Agregar ${item.name}`}
-                    onClick={() => onAdd(item)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground transition-colors hover:bg-accent-hover active:bg-accent-hover"
-                  >
-                    <Plus className="h-5 w-5" strokeWidth={2.5} />
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                item={item}
+                qty={qtyOf(item.id)}
+                onAdd={() => onAdd(item)}
+                onDecrement={() => onDecrement(item.id)}
+              />
+            ))}
+          </ul>
+          {restaurant.categories.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                const i = restaurant.categories.findIndex((c) => c.id === category.id);
+                const next = restaurant.categories[(i + 1) % restaurant.categories.length]!;
+                onCategory(next.id);
+              }}
+              className="mx-auto mt-5 flex min-h-11 items-center gap-1 rounded-full px-4 text-[15px] font-semibold text-[var(--r)] hover:bg-[var(--r-soft)]"
+            >
+              Ver{" "}
+              {restaurant.categories[
+                (restaurant.categories.findIndex((c) => c.id === category.id) + 1) %
+                  restaurant.categories.length
+              ]!.name.toLowerCase()}
+              <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+          )}
+        </div>
+        <CartBar count={cartCount} total={cartTotal} onCart={onCart} />
       </div>
-      <CartBar count={cartCount} total={cartTotal} onCart={onCart} />
     </Screen>
   );
 }

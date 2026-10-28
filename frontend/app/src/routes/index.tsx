@@ -8,7 +8,7 @@ import {
   WaitingScreen,
 } from "@/features/comejave/screens/checkout";
 import { HistoryScreen, HomeScreen } from "@/features/comejave/screens/home";
-import { CategoryScreen, RestaurantScreen } from "@/features/comejave/screens/menu";
+import { RestaurantScreen } from "@/features/comejave/screens/menu";
 import type { PaymentMethod } from "@/features/comejave/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
@@ -48,7 +48,7 @@ function Index() {
   const [orderError, setOrderError] = useState("");
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   // El carrito se vacía al enviar: se guarda el restaurante para la pantalla de éxito.
-  const [lastRestaurantName, setLastRestaurantName] = useState("");
+  const [lastRestaurant, setLastRestaurant] = useState<Restaurant | null>(null);
   const [rating, setRating] = useState(0);
   const [toast, setToast] = useState("");
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null);
@@ -101,7 +101,7 @@ function Index() {
         reference: reference.trim(),
       });
       setLastOrderId(id);
-      setLastRestaurantName(orderRestaurant.name);
+      setLastRestaurant(orderRestaurant);
       setRating(0);
       cart.clear();
       setReference("");
@@ -176,28 +176,15 @@ function Index() {
           />
         );
       case "restaurant":
-        return (
-          <RestaurantScreen
-            restaurant={browsing}
-            cartCount={cart.count}
-            cartTotal={cart.total}
-            onBack={() => back("home")}
-            onCart={goCart}
-            onPick={(id) => {
-              setCategoryId(id);
-              go("category");
-            }}
-          />
-        );
       case "category":
         return (
-          <CategoryScreen
+          <RestaurantScreen
             restaurant={browsing}
             category={category}
             cartCount={cart.count}
             cartTotal={cart.total}
             qtyOf={cart.qtyOf}
-            onBack={() => back("restaurant")}
+            onBack={() => back("home")}
             onCart={goCart}
             onCategory={setCategoryId}
             onAdd={(item) => addToCart(browsing, item)}
@@ -207,7 +194,7 @@ function Index() {
       case "checkout":
         return (
           <CheckoutScreen
-            restaurantName={orderRestaurant.name}
+            restaurant={orderRestaurant}
             lines={cart.lines}
             total={cart.total}
             method={method}
@@ -236,7 +223,7 @@ function Index() {
       case "waiting":
         return (
           <WaitingScreen
-            restaurantName={orderRestaurant.name}
+            restaurant={orderRestaurant}
             lines={cart.lines}
             total={cart.total}
             method={method}
@@ -250,7 +237,7 @@ function Index() {
       case "success":
         return (
           <SuccessScreen
-            restaurantName={lastRestaurantName || orderRestaurant.name}
+            restaurant={lastRestaurant ?? orderRestaurant}
             remote={orders.remote}
             rating={rating}
             onRate={rate}
@@ -276,6 +263,7 @@ function Index() {
             onHistory={() => go("history")}
             onPick={(id) => {
               setRestaurantId(id);
+              setCategoryId("");
               go("restaurant");
             }}
             onSignOut={() => void signOut()}
@@ -285,8 +273,8 @@ function Index() {
   };
 
   return (
-    <main className="flex min-h-dvh justify-center bg-surface sm:px-4 sm:py-10">
-      <div className="relative flex min-h-dvh w-full max-w-[420px] flex-col overflow-y-auto bg-background shadow-[0_18px_60px_rgba(13,45,90,0.12)] sm:h-[860px] sm:min-h-0 sm:rounded-[2rem] sm:border sm:border-border">
+    <main className="flex min-h-dvh justify-center bg-surface sm:items-center sm:px-4 sm:py-8">
+      <div className="relative flex min-h-dvh w-full max-w-[420px] flex-col overflow-y-auto overscroll-contain bg-background sm:h-[min(880px,calc(100dvh-4rem))] sm:min-h-0 sm:rounded-[44px] sm:shadow-[0_40px_80px_-30px_rgba(14,30,54,0.45),0_0_0_10px_#0e1e36]">
         {renderScreen()}
         <Toast message={toast} onDone={clearToast} />
       </div>
