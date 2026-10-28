@@ -20,8 +20,9 @@ App de pedidos para estudiantes de la Pontificia Universidad Javeriana Cali: men
    └─ src/
       ├─ routes/           index.tsx: orquesta las pantallas
       ├─ features/comejave/screens/   auth, home/historial, menú, checkout
-      ├─ hooks/            useAuth, useCart, useOrders
-      └─ lib/              api.ts (cliente de la API), firebase.ts, menú
+      ├─ components/comejave/         Botones, campos, diálogo, aviso, selector de cantidad
+      ├─ hooks/            useAuth, useCart, useOrders, useScreenHistory
+      └─ lib/              api.ts (cliente de la API), firebase.ts, cart.ts, menú
 ```
 
 ## 2. Tecnologías
@@ -138,7 +139,20 @@ Detalles de comportamiento:
 
 ## 10. Flujo de la app
 
-Login → Crear cuenta → Menú principal → Restaurante → Categoría → Carrito → Pago (efectivo, o Nequi con comprobante) → Pago en espera → Pedido registrado → Historial. El carrito es de un solo restaurante: al agregar un producto de otro, el carrito se reemplaza.
+Login → Inicio → Restaurante → Categoría → Carrito → Método de pago → (Nequi: transferencia y comprobante) → Confirmar pedido → Pedido enviado → Mis pedidos.
+
+### Experiencia de usuario
+
+- **Carrito editable:** cada plato tiene un selector − / + tanto en el menú como en el carrito; con la última unidad el botón cambia a quitar. Un aviso breve confirma cada producto agregado.
+- **Un restaurante por pedido:** si el carrito tiene platos de un restaurante y se agrega uno de otro, la app pregunta antes de vaciarlo.
+- **El carrito no se pierde al recargar:** se guarda en `sessionStorage` y se borra al cerrar la pestaña o al enviar el pedido.
+- **Botón atrás del navegador y del celular:** cada pantalla queda en el historial (`useScreenHistory`), así que "atrás" regresa a la pantalla anterior en vez de salir de la app. Después de enviar un pedido no se puede volver a la confirmación.
+- **Categorías en pestañas:** se cambia entre Pastas/Pizzas o Bowls/Ensaladas sin volver atrás, y la barra del carrito con el total queda fija abajo.
+- **Pago claro:** primero se elige el método (efectivo o Nequi) y luego se continúa. En Nequi el número se copia con un toque, el campo del comprobante solo acepta dígitos y explica el error en línea.
+- **Confirmación con resumen:** antes de enviar se ven los platos, el método de pago, el comprobante y el total.
+- **Acciones con confirmación:** cancelar un pedido y cerrar sesión piden confirmación en un diálogo.
+- **Pantallas vacías con salida:** carrito e historial vacíos ofrecen un botón para ir a pedir.
+- **Accesibilidad:** foco visible con teclado, etiquetas ARIA en controles de solo ícono, errores anunciados con `role="alert"`, respeto a `prefers-reduced-motion`, objetivos táctiles de al menos 44 px, campos con texto de 16 px (sin zoom automático en iOS) y documento en `es-CO`.
 
 ## 11. Menú
 
@@ -150,13 +164,26 @@ El menú vive en `frontend/app/src/lib/comejave-data.ts` y en `src/database/menu
 
 ## 12. Pruebas
 
+Backend (desde la raíz):
+
 ```bash
 npm test          # unitarias (guard de Firebase, validación de entorno)
 npm run test:e2e  # API completa con SQLite en memoria
 ```
 
+Frontend (desde `frontend/app`):
+
+```bash
+npm test          # utilidades de auth y lógica del carrito (lib/cart.ts)
+npm run lint
+```
+
 Para correr los e2e contra PostgreSQL: `E2E_DB=postgres` más las variables `DB_*`.
 
-## 13. Licencia
+## 13. Autor
+
+Nicolás Cuastumal, Ingeniería de Sistemas, Pontificia Universidad Javeriana Cali.
+
+## 14. Licencia
 
 UNLICENSED.
