@@ -1,36 +1,85 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Restaurant } from "@/lib/comejave-data";
-import type { CartLine } from "@/features/comejave/types";
+import {
+  EMPTY_CART,
+  addItem,
+  cartCount,
+  cartTotal,
+  conflicts,
+  decrementItem,
+  parseCart,
+  removeItem,
+  type CartItem,
+  type CartState,
+} from "@/lib/cart";
 
-type CartItem = Omit<CartLine, "qty">;
+const CART_KEY = "comejave.cart";
 
-/** Carrito de un solo restaurante: al agregar de otro, se reemplaza el contenido. */
+/**
+ * Carrito de un solo restaurante. Se guarda en sessionStorage para no perderlo
+ * al recargar la página; se borra al cerrar la pestaña.
+ */
 export function useCart() {
-  const [restaurantId, setRestaurantId] = useState<Restaurant["id"] | null>(null);
-  const [lines, setLines] = useState<CartLine[]>([]);
+  const [state, setState] = useState<CartState>(EMPTY_CART);
+  const [hydrated, setHydrated] = useState(false);
 
-  const add = useCallback(
-    (fromRestaurant: Restaurant["id"], item: CartItem) => {
-      const sameRestaurant = restaurantId === null || restaurantId === fromRestaurant;
-      setRestaurantId(fromRestaurant);
-      setLines((previous) => {
-        const base = sameRestaurant ? previous : [];
-        const found = base.find((line) => line.id === item.id);
-        return found
-          ? base.map((line) => (line.id === item.id ? { ...line, qty: line.qty + 1 } : line))
-          : [...base, { ...item, qty: 1 }];
-      });
-    },
-    [restaurantId],
-  );
-
-  const clear = useCallback(() => {
-    setLines([]);
-    setRestaurantId(null);
+  // Se lee después del primer render para no romper la hidratación del SSR.
+  useEffect(() => {
+    try {
+      setState(parseCart(sessionStorage.getItem(CART_KEY)));
+    } catch {
+      /* sin almacenamiento disponible */
+    }
+    setHydrated(true);
   }, []);
 
-  const count = useMemo(() => lines.reduce((sum, line) => sum + line.qty, 0), [lines]);
-  const total = useMemo(() => lines.reduce((sum, line) => sum + line.price * line.qty, 0), [lines]);
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (state.lines.length) sessionStorage.setItem(CART_KEY, JSON.stringify(state));
+      else sessionStorage.removeItem(CART_KEY);
+    } catch {
+      /* sin almacenamiento disponible: el carrito vive solo en memoria */
+    }
+  }, [state, hydrated]);
 
-  return { restaurantId, lines, count, total, add, clear };
+  const add = useCallback(
+    (fromRestaurant: Restaurant["id"], item: CartItem) =>
+      setState((previous) => addItem(previous, fromRestaurant, item)),
+    [],
+  );
+  const decrement = useCallback(
+    (itemId: string) => setState((previous) => decrementItem(previous, itemId)),
+    [],
+  );
+  const remove = useCallback(
+    (itemId: string) => setState((previous) => removeItem(previous, itemId)),
+    [],
+  );
+  const clear = useCallback(() => setState(EMPTY_CART), []);
+
+  const conflictsWith = useCallback(
+    (fromRestaurant: Restaurant["id"]) => conflicts(state, fromRestaurant),
+    [state],
+  );
+  const qtyOf = useCallback(
+    (itemId: string) => state.lines.find((line) => line.id === itemId)?.qty ?? 0,
+    [state.lines],
+  );
+
+  const count = useMemo(() => cartCount(state), [state]);
+  const total = useMemo(() => cartTotal(state), [state]);
+
+  return {
+    restaurantId: state.restaurantId,
+    lines: state.lines,
+    count,
+    total,
+    add,
+    decrement,
+    remove,
+    clear,
+    qtyOf,
+    conflictsWith,
+  };
 }
