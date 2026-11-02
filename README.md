@@ -190,8 +190,6 @@ Para correr los e2e contra PostgreSQL: `E2E_DB=postgres` más las variables `DB_
 
 ## 13. Autor
 
-Nicolás Cuastumal, Ingeniería de Sistemas, Pontificia Universidad Javeriana Cali.
+Nicolás Cuastumal, Antonia Salguero , Nikolas Jimenez Ingeniería de Sistemas, Pontificia Universidad Javeriana Cali.
 
-## 14. Licencia
 
-UNLICENSED.
