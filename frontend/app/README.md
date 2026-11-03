@@ -1,29 +1,15 @@
-# Welcome to your Lovable project
+# Come Jave · frontend
 
-This project was built with [Lovable](https://lovable.dev).
+App móvil de Come Jave (React 19, TanStack Start, Tailwind CSS 4, Firebase Auth).
 
-## Build with Lovable
+- Documentación completa (instalación, variables, API, despliegue): [README principal](../../README.md).
+- Estructura, pantallas y decisiones de diseño del frontend: [frontend/README.md](../README.md).
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+```bash
+npm install
+npm run dev        # http://localhost:8080 (modo demo si no hay .env)
+npm run lint && npm run typecheck && npm test
+npm run build
 ```
 
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+El proyecto está conectado a [Lovable](https://lovable.dev): los commits de la rama principal se sincronizan con su editor, así que conviene no reescribir el historial publicado (ver `AGENTS.md`).
