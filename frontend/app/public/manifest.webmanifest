@@ -1,0 +1,17 @@
+{
+  "name": "Come Jave",
+  "short_name": "Come Jave",
+  "description": "Pide en Ventolini y La Frute desde tu celular, sin hacer fila, en el campus de la Javeriana Cali.",
+  "lang": "es-CO",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d2d5a",
+  "theme_color": "#0d2d5a",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

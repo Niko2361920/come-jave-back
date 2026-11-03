@@ -17,18 +17,7 @@ import { useScreenHistory } from "@/hooks/useScreenHistory";
 import { restaurants, type Product, type Restaurant } from "@/lib/comejave-data";
 import { ConfirmDialog, Screen, Toast } from "@/components/comejave/ui";
 
-const DESCRIPTION =
-  "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.";
-
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Come Jave: pide en el campus Javeriana Cali" },
-      { name: "description", content: DESCRIPTION },
-      { property: "og:title", content: "Come Jave: pide en el campus Javeriana Cali" },
-      { property: "og:description", content: DESCRIPTION },
-    ],
-  }),
   component: Index,
 });
 
@@ -53,6 +42,11 @@ function Index() {
   const [toast, setToast] = useState("");
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null);
   const clearToast = useCallback(() => setToast(""), []);
+
+  // El aviso de "agregado" pertenece a la pantalla donde se mostró.
+  useEffect(() => {
+    setToast("");
+  }, [screen]);
 
   // La sesión decide si se ven las pantallas de acceso o las de la app.
   const loggedIn = Boolean(auth.user);
