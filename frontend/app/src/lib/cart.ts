@@ -14,12 +14,12 @@ export function addItem(
 ): CartState {
   const base = cart.restaurantId === fromRestaurant ? cart.lines : [];
   const found = base.some((line) => line.id === item.id);
-  const { id, name, price, emoji } = item;
+  const { id, name, price } = item;
   return {
     restaurantId: fromRestaurant,
     lines: found
       ? base.map((line) => (line.id === id ? { ...line, qty: line.qty + 1 } : line))
-      : [...base, { id, name, price, emoji, qty: 1 }],
+      : [...base, { id, name, price, qty: 1 }],
   };
 }
 
