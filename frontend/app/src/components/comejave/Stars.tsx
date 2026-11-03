@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +24,13 @@ export function Stars({ value, onChange }: { value: number; onChange: (v: number
           className="rounded-md p-1 transition-transform duration-150 hover:scale-110 active:scale-95"
         >
           <Star
+            // Al cambiar la calificación se vuelven a montar solo las estrellas encendidas.
+            key={n <= value ? `on-${value}` : "off"}
+            style={{ "--i": n } as CSSProperties}
             className={cn(
               "h-9 w-9 transition-colors",
               n <= active ? "fill-accent text-accent" : "text-input",
+              n <= value && "star-pop",
             )}
             strokeWidth={1.5}
           />

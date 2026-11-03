@@ -55,22 +55,28 @@ export function LoginScreen({ auth, onSignup }: { auth: Auth; onSignup: () => vo
   return (
     <Screen className="flex flex-1 flex-col bg-primary">
       <div className="relative flex min-h-[300px] flex-1 flex-col justify-end overflow-hidden px-7 pt-12 pb-10 text-white">
-        <div aria-hidden className="pointer-events-none absolute -top-6 -right-14 h-56 w-56">
+        <div aria-hidden className="float pointer-events-none absolute -top-6 -right-14 h-56 w-56">
           <DishArt itemId="z2" className="pop h-full w-full rotate-12 drop-shadow-2xl" />
         </div>
-        <div aria-hidden className="pointer-events-none absolute top-36 -right-6 h-32 w-32">
+        <div
+          aria-hidden
+          className="float pointer-events-none absolute top-36 -right-6 h-32 w-32 [--float-delay:-1.8s]"
+        >
           <DishArt
             itemId="b1"
             className="pop h-full w-full -rotate-12 drop-shadow-xl [animation-delay:90ms]"
           />
         </div>
-        <div aria-hidden className="pointer-events-none absolute top-6 right-36 h-24 w-24">
+        <div
+          aria-hidden
+          className="float pointer-events-none absolute top-6 right-36 h-24 w-24 [--float-delay:-3.6s]"
+        >
           <DishArt
             itemId="p3"
             className="pop h-full w-full rotate-6 drop-shadow-xl [animation-delay:160ms]"
           />
         </div>
-        <h1 className="font-display relative text-[64px] leading-[0.9] font-extrabold tracking-[-0.045em]">
+        <h1 className="font-display relative text-[64px] leading-[0.9] font-extrabold tracking-[-0.035em]">
           Come
           <br />
           <span className="text-accent">Jave</span>

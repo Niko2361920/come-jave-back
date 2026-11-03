@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { Banknote, Check, Copy, Smartphone } from "lucide-react";
 import { BottomBar, Btn, Field, Notice, QtyStepper, Screen } from "@/components/comejave/ui";
 import { Header } from "@/components/comejave/layout";
@@ -8,9 +8,8 @@ import { restaurantStyle } from "@/components/comejave/theme";
 import type { CartLine, PaymentMethod } from "@/features/comejave/types";
 import { isValidReference } from "@/features/comejave/validation";
 import { formatCOP, type Restaurant } from "@/lib/comejave-data";
+import { NEQUI_ACCOUNT_NAME, NEQUI_NUMBER } from "@/lib/config";
 import { cn } from "@/lib/utils";
-
-const NEQUI_NUMBER = "318 452 9017";
 
 const METHODS: {
   id: PaymentMethod;
@@ -249,7 +248,7 @@ export function OnlinePaymentScreen({
             <p className="font-display relative mt-2 text-[32px] font-bold tracking-[-0.02em] tabular-nums">
               {NEQUI_NUMBER}
             </p>
-            <p className="relative text-[15px] text-white/75">Come Jave, Javeriana Cali</p>
+            <p className="relative text-[15px] text-white/75">{NEQUI_ACCOUNT_NAME}</p>
             <div className="relative mt-6 flex items-end justify-between gap-3">
               <div>
                 <p className="text-[13px] text-white/65">Monto exacto</p>
@@ -373,6 +372,47 @@ export function WaitingScreen({
   );
 }
 
+/** Piezas de confeti: posiciones fijas (sin azar) para que servidor y navegador coincidan. */
+const CONFETTI = Array.from({ length: 24 }, (_, i) => {
+  const angle = (i / 24) * Math.PI * 2 + (i % 3) * 0.18;
+  const distance = 95 + (i % 5) * 30;
+  return {
+    dx: Math.round(Math.cos(angle) * distance),
+    dy: Math.round(Math.sin(angle) * distance) - 24,
+    rot: (i % 2 ? 1 : -1) * (160 + i * 21),
+    color: ["var(--r)", "var(--accent)", "var(--primary)"][i % 3]!,
+    size: 7 + (i % 4) * 2,
+    round: i % 3 === 0,
+  };
+});
+
+function Confetti() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0">
+      {CONFETTI.map((piece, i) => (
+        <span
+          key={i}
+          style={
+            {
+              "--i": i,
+              "--dx": `${piece.dx}px`,
+              "--dy": `${piece.dy}px`,
+              "--rot": `${piece.rot}deg`,
+              width: piece.size,
+              height: piece.round ? piece.size : piece.size * 0.55,
+              background: piece.color,
+            } as CSSProperties
+          }
+          className={cn(
+            "confetti absolute top-1/2 left-1/2 -ml-1 opacity-0",
+            piece.round ? "rounded-full" : "rounded-[2px]",
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function SuccessScreen({
   restaurant,
   remote,
@@ -393,11 +433,26 @@ export function SuccessScreen({
     <Screen className="flex flex-1 flex-col">
       <div
         style={restaurantStyle(restaurant.id)}
-        className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-14 text-center"
+        className="flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-6 py-14 text-center"
       >
-        <span className="pop flex h-28 w-28 items-center justify-center rounded-full bg-[var(--r)] shadow-[0_20px_40px_-16px_var(--r)]">
-          <Check className="h-14 w-14 text-white" strokeWidth={3} />
-        </span>
+        <div className="relative mb-3 flex h-28 w-28 items-center justify-center">
+          <span aria-hidden className="ring-pulse absolute inset-0 rounded-full bg-[var(--r)]" />
+          <Confetti />
+          <span className="pop relative flex h-28 w-28 items-center justify-center rounded-full bg-[var(--r)] shadow-[0_20px_40px_-16px_var(--r)]">
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden
+              className="h-14 w-14"
+              fill="none"
+              stroke="white"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path className="draw-check" pathLength="1" d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+          </span>
+        </div>
         <div>
           <h2 className="font-display text-[34px] font-extrabold text-foreground">
             {remote ? "Pedido enviado" : "¡Listo, pedido hecho!"}

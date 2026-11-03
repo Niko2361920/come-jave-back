@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { ChevronRight, LogOut, ReceiptText, ShoppingBag, Star } from "lucide-react";
 import { Btn, ConfirmDialog, Notice, Screen } from "@/components/comejave/ui";
 import { CartButton, Header, IconButton } from "@/components/comejave/layout";
@@ -68,7 +68,7 @@ export function HomeScreen({
         <CartButton count={cartCount} onClick={onCart} />
       </header>
 
-      <h1 className="font-display px-1 text-[40px] font-extrabold tracking-[-0.035em] text-foreground">
+      <h1 className="font-display rise px-1 text-[40px] font-extrabold tracking-[-0.03em] text-foreground">
         ¿Qué comemos hoy, {firstName(user.name)}?
       </h1>
 
@@ -96,13 +96,13 @@ export function HomeScreen({
       )}
 
       <div className="flex flex-col gap-4">
-        {restaurants.map((r) => (
+        {restaurants.map((r, index) => (
           <button
             type="button"
             key={r.id}
             onClick={() => onPick(r.id)}
-            style={restaurantStyle(r.id)}
-            className="pressable group relative isolate flex min-h-[188px] flex-col justify-between overflow-hidden rounded-[28px] bg-[var(--r)] p-6 text-left text-white shadow-[0_18px_40px_-22px_var(--r)]"
+            style={{ ...restaurantStyle(r.id), "--i": index + 1 } as CSSProperties}
+            className="pressable rise group relative isolate flex min-h-[188px] flex-col justify-between overflow-hidden rounded-[28px] bg-[var(--r)] p-6 text-left text-white shadow-[0_18px_40px_-22px_var(--r)]"
           >
             <span className="relative z-10">
               <span className="font-display block text-[34px] font-extrabold tracking-[-0.03em]">
@@ -116,7 +116,10 @@ export function HomeScreen({
             </span>
             <DishArt
               itemId={HERO_DISH[r.id]}
-              className="absolute -right-10 -bottom-12 -z-0 h-48 w-48 rotate-[-14deg] drop-shadow-[0_16px_24px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:rotate-[-4deg]"
+              className={cn(
+                "float absolute -right-10 -bottom-12 -z-0 h-48 w-48 rotate-[-14deg] drop-shadow-[0_16px_24px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:rotate-[-4deg]",
+                index % 2 ? "[--float-delay:-2.4s]" : "[--float-delay:0s]",
+              )}
             />
           </button>
         ))}
@@ -125,7 +128,8 @@ export function HomeScreen({
       <button
         type="button"
         onClick={onHistory}
-        className="pressable flex items-center gap-3 rounded-[22px] bg-card p-3 pr-4 text-left shadow-[0_1px_2px_rgba(14,30,54,0.06)] ring-1 ring-separator"
+        style={{ "--i": 3 } as CSSProperties}
+        className="pressable rise flex items-center gap-3 rounded-[22px] bg-card p-3 pr-4 text-left shadow-[0_1px_2px_rgba(14,30,54,0.06)] ring-1 ring-separator"
       >
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft">
           <ReceiptText className="h-5 w-5 text-primary" strokeWidth={2} />

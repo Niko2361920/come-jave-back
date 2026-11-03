@@ -252,14 +252,23 @@ export function ConfirmDialog({
 }
 
 /** Barra fija abajo de la pantalla para la acción principal. */
-export function BottomBar({ children }: { children: ReactNode }) {
+export function BottomBar({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="material sticky bottom-0 z-20 mt-auto px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] [mask-image:none] shadow-[0_-1px_0_var(--separator)]">
+    <div
+      className={cn(
+        "material sticky bottom-0 z-20 mt-auto px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-1px_0_var(--separator)]",
+        className,
+      )}
+    >
       {children}
     </div>
   );
 }
 
 export function Screen({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("animate-in fade-in duration-200", className)}>{children}</div>;
+  return (
+    <div className={cn("animate-in fade-in slide-in-from-bottom-2 duration-300", className)}>
+      {children}
+    </div>
+  );
 }
