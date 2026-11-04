@@ -10,7 +10,7 @@ export type ScreenId =
   | "success"
   | "history";
 
-export type CartLine = { id: string; name: string; price: number; qty: number; emoji: string };
+export type CartLine = { id: string; name: string; price: number; qty: number };
 
 export type PaymentMethod = "Efectivo" | "Nequi";
 
@@ -20,7 +20,6 @@ export type Order = {
   id: string;
   date: string;
   restaurant: string;
-  emoji: string;
   items: CartLine[];
   total: number;
   method: PaymentMethod;

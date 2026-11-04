@@ -11,27 +11,26 @@ import {
 import { useEffect, useMemo, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { StatusPage, statusButton, statusButtonOutline } from "@/components/comejave/StatusPage";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+
+const TITLE = "Come Jave · Pide en el campus Javeriana Cali";
+const DESCRIPTION =
+  "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.";
+/** Dirección pública de la app (sin barra final); los enlaces de Open Graph deben ser absolutos. */
+const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "").replace(/\/$/, "");
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Página no encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          La dirección que abriste no existe en Come Jave.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Ir al inicio
-          </Link>
-        </div>
-      </div>
-    </div>
+    <StatusPage
+      dishId="z1"
+      title="Esta página no existe"
+      body="La dirección que abriste no está en Come Jave."
+    >
+      <Link to="/" className={statusButton}>
+        Ir al inicio
+      </Link>
+    </StatusPage>
   );
 }
 
@@ -47,31 +46,25 @@ function ErrorComponent({ error: caught, reset }: ErrorComponentProps) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">La página no cargó</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ocurrió un error inesperado. Intenta de nuevo o vuelve al inicio.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Intentar de nuevo
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Ir al inicio
-          </a>
-        </div>
-      </div>
-    </div>
+    <StatusPage
+      dishId="p1"
+      title="Algo salió mal"
+      body="Ocurrió un error inesperado. Intenta de nuevo o vuelve al inicio."
+    >
+      <button
+        type="button"
+        onClick={() => {
+          router.invalidate();
+          reset();
+        }}
+        className={statusButton}
+      >
+        Intentar de nuevo
+      </button>
+      <a href="/" className={statusButtonOutline}>
+        Ir al inicio
+      </a>
+    </StatusPage>
   );
 }
 
@@ -81,49 +74,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#0d2d5a" },
-      { title: "Come Jave · Pide en el campus Javeriana Cali" },
-      {
-        name: "description",
-        content:
-          "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.",
-      },
-      { property: "og:title", content: "Come Jave · Pide en el campus Javeriana Cali" },
-      {
-        property: "og:description",
-        content:
-          "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.",
-      },
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "es_CO" },
+      { property: "og:site_name", content: "Come Jave" },
+      { property: "og:image", content: `${SITE_URL}/og.png` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Come Jave · Pide en el campus Javeriana Cali" },
-      {
-        name: "twitter:description",
-        content:
-          "Pide en Ventolini y La Frute desde tu celular: elige categoría, agrega al carrito, paga en efectivo o Nequi y revisa tu historial de comidas.",
-      },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e53712a2-51bb-4965-a432-3b132114d3c1/id-preview-ecbf595c--c8009be4-fc9b-4a85-8ca6-11bf4f5fb0c2.lovable.app-1785770312736.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e53712a2-51bb-4965-a432-3b132114d3c1/id-preview-ecbf595c--c8009be4-fc9b-4a85-8ca6-11bf4f5fb0c2.lovable.app-1785770312736.png",
-      },
+      { name: "twitter:title", content: TITLE },
+      { name: "twitter:description", content: DESCRIPTION },
+      { name: "twitter:image", content: `${SITE_URL}/og.png` },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Come Jave" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap",
-      },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,

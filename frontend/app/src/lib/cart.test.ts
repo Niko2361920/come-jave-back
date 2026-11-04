@@ -10,9 +10,9 @@ import {
   removeItem,
 } from "./cart";
 
-const bolognesa = { id: "p1", name: "Bolognesa", price: 22000, emoji: "🍝" };
-const pesto = { id: "p3", name: "Pesto", price: 23000, emoji: "🌿" };
-const cesar = { id: "e1", name: "César", price: 19000, emoji: "🥗" };
+const bolognesa = { id: "p1", name: "Bolognesa", price: 22000 };
+const pesto = { id: "p3", name: "Pesto", price: 23000 };
+const cesar = { id: "e1", name: "César", price: 19000 };
 
 describe("carrito", () => {
   it("agrega productos y suma cantidades del mismo producto", () => {

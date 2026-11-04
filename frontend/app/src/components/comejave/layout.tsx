@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { ChevronLeft, Eye, EyeOff, ShoppingBag } from "lucide-react";
 import { Field } from "@/components/comejave/ui";
+import { useBump } from "@/hooks/useBump";
 import { cn } from "@/lib/utils";
 
 /** Botón redondo de solo ícono. `onColor` se usa sobre fondos de color. */
@@ -79,12 +80,7 @@ export function CartButton({
   onColor?: boolean;
 }) {
   // El contador rebota cuando aumenta, como confirmación de que el plato entró.
-  const previous = useRef(count);
-  const [bump, setBump] = useState(0);
-  useEffect(() => {
-    if (count > previous.current) setBump((n) => n + 1);
-    previous.current = count;
-  }, [count]);
+  const bump = useBump(count);
 
   return (
     <IconButton

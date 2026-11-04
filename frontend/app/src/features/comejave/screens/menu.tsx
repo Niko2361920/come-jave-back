@@ -1,15 +1,17 @@
+import type { CSSProperties } from "react";
 import { ChevronRight, Plus, ShoppingBag } from "lucide-react";
 import { BottomBar, Btn, QtyStepper, Screen } from "@/components/comejave/ui";
 import { BackButton, CartButton } from "@/components/comejave/layout";
 import { CategoryArt, DishArt } from "@/components/comejave/DishArt";
 import { restaurantStyle } from "@/components/comejave/theme";
+import { useBump } from "@/hooks/useBump";
 import { formatCOP, type Category, type Product, type Restaurant } from "@/lib/comejave-data";
 import { cn } from "@/lib/utils";
 
 function CartBar({ count, total, onCart }: { count: number; total: number; onCart: () => void }) {
   if (count === 0) return null;
   return (
-    <BottomBar>
+    <BottomBar className="animate-in slide-in-from-bottom-6 fade-in duration-300">
       <Btn
         full
         onClick={onCart}
@@ -32,21 +34,30 @@ function CartBar({ count, total, onCart }: { count: number; total: number; onCar
 
 function ProductRow({
   item,
+  index,
   qty,
   onAdd,
   onDecrement,
 }: {
   item: Product;
+  /** Posición en la lista: retrasa la animación de entrada. */
+  index: number;
   qty: number;
   onAdd: () => void;
   onDecrement: () => void;
 }) {
+  const bump = useBump(qty);
   return (
-    <li className="flex items-center gap-4 py-4 pr-4 pl-3">
+    <li
+      style={{ "--i": index } as CSSProperties}
+      className="rise flex items-center gap-4 py-4 pr-4 pl-3"
+    >
       <span
+        key={bump}
         className={cn(
           "flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-[20px] p-1.5 transition-colors",
           qty > 0 ? "bg-[var(--r-soft)]" : "bg-muted",
+          bump > 0 && "bump-soft",
         )}
       >
         <DishArt itemId={item.id} className="h-full w-full" />
@@ -117,19 +128,33 @@ export function RestaurantScreen({
             {restaurant.name}
           </h2>
           <p className="relative z-10 mt-1 text-[17px] text-white/85">{restaurant.tagline}</p>
-          <CategoryArt
-            key={category.id}
-            categoryId={category.id}
-            className="pop absolute -right-12 -bottom-16 -z-0 h-56 w-56 rotate-[-12deg] drop-shadow-[0_20px_30px_rgba(0,0,0,0.3)]"
-          />
+          <div aria-hidden className="float absolute -right-12 -bottom-16 -z-0 h-56 w-56">
+            <CategoryArt
+              key={category.id}
+              categoryId={category.id}
+              className="pop h-full w-full rotate-[-12deg] drop-shadow-[0_20px_30px_rgba(0,0,0,0.3)]"
+            />
+          </div>
         </div>
 
         <div className="sticky top-0 z-20 -mt-8 rounded-t-[28px] bg-background px-5 pt-5 pb-3">
           <div
             role="tablist"
             aria-label="Categorías"
-            className="grid grid-cols-2 gap-1 rounded-2xl bg-[#e3e6ee] p-1"
+            style={{ gridTemplateColumns: `repeat(${restaurant.categories.length}, 1fr)` }}
+            className="relative grid rounded-2xl bg-[#e3e6ee] p-1"
           >
+            {/* Indicador que se desliza hasta la categoría elegida. */}
+            <span
+              aria-hidden
+              style={{
+                width: `calc((100% - 0.5rem) / ${restaurant.categories.length})`,
+                transform: `translateX(${
+                  restaurant.categories.findIndex((c) => c.id === category.id) * 100
+                }%)`,
+              }}
+              className="absolute inset-y-1 left-1 rounded-xl bg-card shadow-[0_2px_8px_-2px_rgba(14,30,54,0.2)] transition-transform duration-300 ease-[cubic-bezier(0.3,1.2,0.5,1)]"
+            />
             {restaurant.categories.map((c) => {
               const selected = c.id === category.id;
               return (
@@ -140,10 +165,8 @@ export function RestaurantScreen({
                   aria-selected={selected}
                   onClick={() => onCategory(c.id)}
                   className={cn(
-                    "flex min-h-11 items-center justify-center gap-2 rounded-xl text-[16px] font-semibold transition-all duration-200",
-                    selected
-                      ? "bg-card text-foreground shadow-[0_2px_8px_-2px_rgba(14,30,54,0.2)]"
-                      : "text-muted-foreground hover:text-foreground",
+                    "relative flex min-h-11 items-center justify-center gap-2 rounded-xl text-[16px] font-semibold transition-colors duration-200",
+                    selected ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <CategoryArt categoryId={c.id} className="h-6 w-6" />
@@ -160,10 +183,11 @@ export function RestaurantScreen({
             aria-label={category.name}
             className="divide-y divide-separator overflow-hidden rounded-[22px] bg-card ring-1 ring-separator"
           >
-            {category.items.map((item) => (
+            {category.items.map((item, index) => (
               <ProductRow
                 key={item.id}
                 item={item}
+                index={index}
                 qty={qtyOf(item.id)}
                 onAdd={() => onAdd(item)}
                 onDecrement={() => onDecrement(item.id)}

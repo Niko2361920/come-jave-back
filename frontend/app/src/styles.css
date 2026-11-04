@@ -285,4 +285,104 @@
   .pop {
     animation: cj-pop 520ms cubic-bezier(0.3, 1.3, 0.5, 1) both;
   }
+
+  /* Entrada escalonada: cada elemento usa --i (su posición) para retrasarse un poco. */
+  @keyframes cj-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .rise {
+    animation: cj-rise 460ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  /* Flotar suave para los platos decorativos (el giro lo pone la propiedad rotate). */
+  @keyframes cj-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-7px);
+    }
+  }
+  .float {
+    animation: cj-float 5.5s ease-in-out infinite;
+    animation-delay: var(--float-delay, 0s);
+  }
+
+  /* Rebote pequeño para miniaturas y estrellas. */
+  @keyframes cj-bump-soft {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.14);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .bump-soft {
+    animation: cj-bump-soft 360ms cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  .star-pop {
+    animation: cj-star-pop 420ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+  @keyframes cj-star-pop {
+    0% {
+      transform: scale(0.5) rotate(-25deg);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  /* Check que se dibuja y aro que se expande en el pedido exitoso. */
+  @keyframes cj-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .draw-check {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: cj-draw 520ms 260ms cubic-bezier(0.5, 0, 0.2, 1) forwards;
+  }
+  @keyframes cj-ring {
+    from {
+      transform: scale(1);
+      opacity: 0.45;
+    }
+    to {
+      transform: scale(1.75);
+      opacity: 0;
+    }
+  }
+  .ring-pulse {
+    animation: cj-ring 1.4s 300ms ease-out 2 both;
+  }
+
+  /* Confeti: cada pieza vuela hasta (--dx, --dy), gira y se desvanece. */
+  @keyframes cj-confetti {
+    0% {
+      transform: translate(0, 0) rotate(0) scale(0.4);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1);
+      opacity: 0;
+    }
+  }
+  .confetti {
+    animation: cj-confetti 1.25s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 18ms + 200ms);
+  }
 }
